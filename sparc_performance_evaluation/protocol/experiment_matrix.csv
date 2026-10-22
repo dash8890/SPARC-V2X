@@ -1,0 +1,11 @@
+experiment_id,figure_panels,methods,factor,levels_or_notes,seed_split,status
+E0,gates G0-G9,all shared contracts,correctness,"offline gates PASS; G1/G8 from bake-off audits; G4 noted delayed-rx",n/a,PARTIAL_PASS
+E1,"Fig.3 (2)",SPARC;B1;MF archive,training/validation curves,"historical aggregated; Direct PPO training launched",train+validation_only,IN_PROGRESS
+E2,"Fig.4 (2); Fig.7a-b",A0;B1;B2,density,"final-test nominal d=35 COMPLETE (5x3); other densities pending on same 5 seeds",final_test,PARTIAL
+E3,"Fig.5 (1)",six policies + envelope sweep,B_max,"pending after nominal",final_test_or_validation,NOT_STARTED
+E4,"Fig.6 (2)",six methods,workload;deadline_multiplier,"pending",final_test,NOT_STARTED
+E5,"Fig.7c-d; Fig.8 (4)",safety-only;SPARC;B1,radio/admission trace,"pending dedicated stress case",final_test_or_validation,NOT_STARTED
+E6,"Fig.9 (2)",A0-A6 (+optional MF),ablations,"A2=B1 reuse; A0/B2 running on final-test; A3-A6/B3 training pending",final_test,IN_PROGRESS
+E7,"Fig.10 (4)",SPARC+governor path,enforcement/cost,"wall_seconds logged per episode in paired eval",validation+final_test,IN_PROGRESS
+E8,"Fig.11 (2)",nominal vs specialized SPARC,robustness,"pending",final_test,NOT_STARTED
+E9,Table IV,all methods,complexity,"partial params filled; B4/B5 blocked/pending",all,PARTIAL

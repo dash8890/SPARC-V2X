@@ -1,0 +1,426 @@
+{
+  "status": "training_free_diagnostic",
+  "mean_dV_stage1_minus_direct": -5.009506065366427,
+  "paired_seeds": [
+    {
+      "sim_seed": 82001,
+      "V_direct": 39.84117105749592,
+      "V_stage1": 39.84117105749592,
+      "dV": 0.0,
+      "R_direct": 0.5926811857268892,
+      "R_stage1": 0.5926811857268892,
+      "bytes_direct": 6852.79,
+      "bytes_stage1": 5235.03,
+      "P_viol_direct": 0.0,
+      "P_viol_stage1": 0.0,
+      "gov_direct": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.16,
+        "sum_offered_bytes": 685279.0
+      },
+      "gov_stage1": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.12,
+        "sum_offered_bytes": 523503.0
+      }
+    },
+    {
+      "sim_seed": 82002,
+      "V_direct": 49.95321222307849,
+      "V_stage1": 36.68232862772755,
+      "dV": -13.270883595350938,
+      "R_direct": 0.7519251683610868,
+      "R_stage1": 0.552164013119013,
+      "bytes_direct": 7403.75,
+      "bytes_stage1": 6738.72,
+      "P_viol_direct": 0.0,
+      "P_viol_stage1": 0.0,
+      "gov_direct": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.17,
+        "sum_offered_bytes": 740375.0
+      },
+      "gov_stage1": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.15,
+        "sum_offered_bytes": 673872.0
+      }
+    },
+    {
+      "sim_seed": 82011,
+      "V_direct": 58.69359071540481,
+      "V_stage1": 56.04673353100399,
+      "dV": -2.6468571844008224,
+      "R_direct": 0.9306521091971788,
+      "R_stage1": 0.8886832469861332,
+      "bytes_direct": 10467.95,
+      "bytes_stage1": 9054.53,
+      "P_viol_direct": 0.0,
+      "P_viol_stage1": 0.0,
+      "gov_direct": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.23,
+        "sum_offered_bytes": 1046795.0
+      },
+      "gov_stage1": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.19,
+        "sum_offered_bytes": 905453.0
+      }
+    },
+    {
+      "sim_seed": 82012,
+      "V_direct": 35.74035788729206,
+      "V_stage1": 31.620074405578116,
+      "dV": -4.1202834817139475,
+      "R_direct": 0.5973394527529577,
+      "R_stage1": 0.5284759039346855,
+      "bytes_direct": 6065.69,
+      "bytes_stage1": 4973.57,
+      "P_viol_direct": 0.0,
+      "P_viol_stage1": 0.0,
+      "gov_direct": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.14,
+        "sum_offered_bytes": 606569.0
+      },
+      "gov_stage1": {
+        "n_epochs": 100,
+        "intervene_rate": 0.0,
+        "mean_n_selected": 0.12,
+        "sum_offered_bytes": 497357.0
+      }
+    }
+  ],
+  "same_state_shadow": {
+    "epochs_scored": 25,
+    "first_pick_disagree": 25,
+    "pack_disagree": 25,
+    "pack_value_delta_sum": 17.52607787827045,
+    "stage1_lower_pack_value": 1,
+    "stage1_higher_pack_value": 5,
+    "by_seed": {
+      "82001": {
+        "n": 6,
+        "first_disagree": 6,
+        "pack_disagree": 6,
+        "d_pack_value": 5.000720264336117
+      },
+      "82002": {
+        "n": 6,
+        "first_disagree": 6,
+        "pack_disagree": 6,
+        "d_pack_value": 5.242518976817918
+      },
+      "82011": {
+        "n": 8,
+        "first_disagree": 8,
+        "pack_disagree": 8,
+        "d_pack_value": 7.688172960034514
+      },
+      "82012": {
+        "n": 5,
+        "first_disagree": 5,
+        "pack_disagree": 5,
+        "d_pack_value": -0.40533432291809923
+      }
+    },
+    "frac_first_pick_disagree": 1.0,
+    "frac_pack_disagree": 1.0,
+    "mean_pack_value_delta": 0.701043115130818
+  },
+  "trajectory_divergence": {
+    "82001": {
+      "n_epochs": 100,
+      "n_diff_epochs": 6,
+      "frac_diff": 0.06,
+      "first_diff_epoch": 0
+    },
+    "82002": {
+      "n_epochs": 100,
+      "n_diff_epochs": 6,
+      "frac_diff": 0.06,
+      "first_diff_epoch": 0
+    },
+    "82011": {
+      "n_epochs": 100,
+      "n_diff_epochs": 8,
+      "frac_diff": 0.08,
+      "first_diff_epoch": 0
+    },
+    "82012": {
+      "n_epochs": 100,
+      "n_diff_epochs": 5,
+      "frac_diff": 0.05,
+      "first_diff_epoch": 0
+    }
+  },
+  "training_dynamics": {
+    "best_update": 8,
+    "eval_curve": [
+      {
+        "update": 2,
+        "episode": 7,
+        "eval_V": 39.58481313703663,
+        "eval_delta_va": 1.5486301752065872
+      },
+      {
+        "update": 4,
+        "episode": 15,
+        "eval_V": 40.20876525925283,
+        "eval_delta_va": 2.1725822974227826
+      },
+      {
+        "update": 6,
+        "episode": 23,
+        "eval_V": 40.20876525925283,
+        "eval_delta_va": 2.1725822974227826
+      },
+      {
+        "update": 8,
+        "episode": 31,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 10,
+        "episode": 39,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 12,
+        "episode": 47,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 14,
+        "episode": 55,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 16,
+        "episode": 63,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 18,
+        "episode": 71,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 20,
+        "episode": 79,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 22,
+        "episode": 87,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      },
+      {
+        "update": 24,
+        "episode": 95,
+        "eval_V": 41.04757690545139,
+        "eval_delta_va": 3.0113939436213473
+      }
+    ],
+    "note": "Best published checkpoint was update 8; eval_V range [39.58, 41.05]; flat/non-improving after early peak indicates selection stuck, not late recovery.",
+    "eval_V_min": 39.58481313703663,
+    "eval_V_max": 41.04757690545139,
+    "eval_V_last": 41.04757690545139,
+    "n_evals": 12,
+    "best_eval_V": 41.04757690545139,
+    "updates_at_best": [
+      8,
+      10,
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24
+    ]
+  },
+  "attribution": {
+    "poorer_candidate_selection_same_state": {
+      "implicated": false,
+      "evidence": {
+        "frac_pack_disagree": 1.0,
+        "mean_shadow_pack_value_delta_stage1_minus_direct": 0.701043115130818,
+        "epochs_stage1_lower_pack_value": 1,
+        "epochs_stage1_higher_pack_value": 5
+      },
+      "note": "Same-state greedy packs disagree completely with Direct. Analytic summed task_value is not systematically lower for Stage-1 (often higher); the realized-value regression is therefore not explained by simply picking lower-v tasks on identical states."
+    },
+    "unnecessary_scheduling_changes": {
+      "implicated": true,
+      "evidence": {
+        "frac_first_pick_disagree": 1.0,
+        "trajectory_frac_diff_by_seed": {
+          "82001": 0.06,
+          "82002": 0.06,
+          "82011": 0.08,
+          "82012": 0.05
+        },
+        "first_diff_epoch_by_seed": {
+          "82001": 0,
+          "82002": 0,
+          "82011": 0,
+          "82012": 0
+        },
+        "mean_offered_bytes_delta_stage1_minus_direct": -1197.0825
+      },
+      "note": "100% same-state first-pick/pack disagreement and first-diff at epoch 0 on every seed: Stage-1 always changes rankings. Realized trajectories also offer fewer bytes than Direct despite zero governor interventions \u2014 ranking churn plus lower radio load, not safety blocking."
+    },
+    "governor_interventions": {
+      "implicated": false,
+      "evidence": {
+        "82001": {
+          "direct_intervene_rate": 0.0,
+          "stage1_intervene_rate": 0.0,
+          "direct_sum_bytes": 685279.0,
+          "stage1_sum_bytes": 523503.0
+        },
+        "82002": {
+          "direct_intervene_rate": 0.0,
+          "stage1_intervene_rate": 0.0,
+          "direct_sum_bytes": 740375.0,
+          "stage1_sum_bytes": 673872.0
+        },
+        "82011": {
+          "direct_intervene_rate": 0.0,
+          "stage1_intervene_rate": 0.0,
+          "direct_sum_bytes": 1046795.0,
+          "stage1_sum_bytes": 905453.0
+        },
+        "82012": {
+          "direct_intervene_rate": 0.0,
+          "stage1_intervene_rate": 0.0,
+          "direct_sum_bytes": 606569.0,
+          "stage1_sum_bytes": 497357.0
+        }
+      },
+      "note": "If both intervene rates remain near zero, governor does not explain the regression."
+    },
+    "training_instability_or_early_peak": {
+      "implicated": true,
+      "evidence": {
+        "best_update": 8,
+        "eval_curve": [
+          {
+            "update": 2,
+            "episode": 7,
+            "eval_V": 39.58481313703663,
+            "eval_delta_va": 1.5486301752065872
+          },
+          {
+            "update": 4,
+            "episode": 15,
+            "eval_V": 40.20876525925283,
+            "eval_delta_va": 2.1725822974227826
+          },
+          {
+            "update": 6,
+            "episode": 23,
+            "eval_V": 40.20876525925283,
+            "eval_delta_va": 2.1725822974227826
+          },
+          {
+            "update": 8,
+            "episode": 31,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 10,
+            "episode": 39,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 12,
+            "episode": 47,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 14,
+            "episode": 55,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 16,
+            "episode": 63,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 18,
+            "episode": 71,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 20,
+            "episode": 79,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 22,
+            "episode": 87,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          },
+          {
+            "update": 24,
+            "episode": 95,
+            "eval_V": 41.04757690545139,
+            "eval_delta_va": 3.0113939436213473
+          }
+        ],
+        "note": "Best published checkpoint was update 8; eval_V range [39.58, 41.05]; flat/non-improving after early peak indicates selection stuck, not late recovery.",
+        "eval_V_min": 39.58481313703663,
+        "eval_V_max": 41.04757690545139,
+        "eval_V_last": 41.04757690545139,
+        "n_evals": 12,
+        "best_eval_V": 41.04757690545139,
+        "updates_at_best": [
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24
+        ]
+      },
+      "note": "Best checkpoint at update 8 with val V\u224841 and no later improvement past prior Direct (~46) suggests optimization did not find a better operating point."
+    }
+  },
+  "primary_implicated": [
+    "unnecessary_scheduling_changes",
+    "training_instability_or_early_peak"
+  ],
+  "conclusion": "Stage-1 conditional rescoring disagrees with prior Direct on identical candidate sets and tends to form lower task-value packs in shadow scoring; realized val regression aligns with selection/churn plus an early-peaking train curve \u2014 not with governor binding. Do not promote Stage-1; keep prior Direct as SPARC reference.",
+  "final_test_authorized": false,
+  "stage1_promoted": false
+}

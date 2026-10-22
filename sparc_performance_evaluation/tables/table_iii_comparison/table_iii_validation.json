@@ -1,0 +1,106 @@
+{
+  "label": "Table III \u2014 nominal comparison (VALIDATION bake-off; not final-test)",
+  "seed_split": "historical_validation",
+  "seeds": {
+    "sim": [
+      82001,
+      82002,
+      82011,
+      82012
+    ],
+    "task": [
+      182001,
+      182002,
+      182011,
+      182012
+    ]
+  },
+  "summary": {
+    "n_seeds": 4,
+    "methods": {
+      "value_aware": {
+        "mean_R": 0.5941112424052875,
+        "mean_completed": 38.03618296183004
+      },
+      "minfinish": {
+        "mean_R": 0.5661905936216487,
+        "mean_completed": 36.299475662754844
+      },
+      "residual": {
+        "mean_R": 0.7312146731756333,
+        "mean_completed": 46.817317531823804
+      }
+    },
+    "paired_vs_value_aware": {
+      "minfinish": {
+        "mean_delta_R_vs_VA": -0.027920648783638827,
+        "mean_delta_completed_vs_VA": -1.7367072990752037,
+        "frac_better_R_than_VA": 0.25
+      },
+      "residual": {
+        "mean_delta_R_vs_VA": 0.13710343077034576,
+        "mean_delta_completed_vs_VA": 8.78113456999376,
+        "frac_better_R_than_VA": 1.0
+      }
+    },
+    "VA_vs_MF": {
+      "mean_VA_minus_MF_R": 0.027920648783638827,
+      "frac_VA_beats_MF": 0.5,
+      "frac_MF_beats_VA": 0.25,
+      "frac_tie": 0.25
+    },
+    "paired_vs_minfinish": {
+      "residual": {
+        "mean_delta_R_vs_MF": 0.16502407955398457,
+        "mean_delta_completed_vs_MF": 10.517841869068965,
+        "frac_better_R_than_MF": 1.0
+      }
+    }
+  },
+  "paired_vs_baselines": {
+    "sparc_minus_value_aware": {
+      "delta_R": {
+        "mean": 0.13710343077034576,
+        "ci95_low": 0.09851926021275499,
+        "ci95_high": 0.17457024676806682,
+        "n": 4,
+        "method": "seed_cluster_bootstrap"
+      },
+      "delta_V": {
+        "mean": 8.78113456999376,
+        "ci95_low": 6.4784257621064985,
+        "ci95_high": 11.370300734239391,
+        "n": 4,
+        "method": "seed_cluster_bootstrap"
+      }
+    },
+    "sparc_minus_minfinish": {
+      "delta_R": {
+        "mean": 0.16502407955398457,
+        "ci95_low": 0.09820890785624556,
+        "ci95_high": 0.22955552682406183,
+        "n": 4,
+        "method": "seed_cluster_bootstrap"
+      },
+      "delta_V": {
+        "mean": 10.517841869068965,
+        "ci95_low": 6.220411320312069,
+        "ci95_high": 14.778295332402461,
+        "n": 4,
+        "method": "seed_cluster_bootstrap"
+      }
+    }
+  },
+  "methods_present": [
+    "minfinish",
+    "residual",
+    "value_aware"
+  ],
+  "missing_for_protocol": [
+    "direct_ppo",
+    "lagrangian_ppo",
+    "itora_inspired",
+    "per_epoch_P_viol"
+  ],
+  "claim_restriction": "Cannot support final primary claim; validation only."
+}

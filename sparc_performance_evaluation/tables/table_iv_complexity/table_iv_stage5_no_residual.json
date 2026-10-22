@@ -1,0 +1,47 @@
+{
+  "label": "Table IV Stage-5 (no residual SPARC)",
+  "methods": {
+    "B1_VA": {
+      "trainable": 0,
+      "ranking": "analytic VA score",
+      "admission": "common governor",
+      "train_episodes": 0
+    },
+    "B2_MF": {
+      "trainable": 0,
+      "ranking": "min finish time",
+      "admission": "common governor",
+      "train_episodes": 0
+    },
+    "B3_Direct": {
+      "trainable": 2307,
+      "ranking": "Direct PPO logits",
+      "admission": "common governor",
+      "train_episodes": 96,
+      "updates": 24,
+      "selection": "best_delta_va on validation",
+      "checkpoint": "results/wilab_direct_ppo_96ep/checkpoint_best_delta_va.pt"
+    },
+    "B4_Lagrangian": {
+      "trainable": 2307,
+      "ranking": "Direct-style actor + cost critic",
+      "admission": "unshielded; physical_byte_cap=500000; dual ascent kappa=0.05",
+      "train_episodes": 96,
+      "eligibility_audit": "reports/B4_LAGRANGIAN_ELIGIBILITY_AUDIT.md"
+    },
+    "B5_ITORA_inspired": {
+      "trainable": 0,
+      "ranking": "ITORA-inspired score",
+      "admission": "gov=None",
+      "audit": "protocol/b5_itora_mapping_audit.md"
+    }
+  },
+  "missing": [
+    "inference P50/P95 wall-clock",
+    "bridge overhead seconds",
+    "simulator CPU-hours"
+  ],
+  "excluded": [
+    "SPARC_A0 residual complexity row as primary"
+  ]
+}

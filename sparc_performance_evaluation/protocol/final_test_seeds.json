@@ -1,0 +1,23 @@
+{
+  "status": "SEALED",
+  "n": 5,
+  "sim_seeds": [
+    93000,
+    93001,
+    93002,
+    93003,
+    93004
+  ],
+  "task_seeds": [
+    193000,
+    193001,
+    193002,
+    193003,
+    193004
+  ],
+  "sealed_at_utc": "2026-10-14T06:08:56.558124+00:00",
+  "derivation": "sequential from sim=93000+k, task=193000+k skipping used pools; n=5",
+  "partition": "see protocol/SEED_PARTITION.md",
+  "supersedes": "prior n=30 seal 8843e812d597e3b8 (prefix 93000-93004 retained)",
+  "sha256_16": "8bc8eab182600d15"
+}

@@ -1,0 +1,61 @@
+[
+  {
+    "gate": "G0",
+    "pass": true,
+    "n_tasks": 21
+  },
+  {
+    "gate": "G2",
+    "pass": true,
+    "fallback_n": 1,
+    "fallback_reason": "over_budget_or_invalid_assignment",
+    "invalid_reason": "invalid_radio_state",
+    "prr_reason": "prr_below_floor"
+  },
+  {
+    "gate": "G3",
+    "pass": true,
+    "mismatches": []
+  },
+  {
+    "gate": "G5",
+    "pass": true,
+    "ok_argmax": true,
+    "ok_scale": true,
+    "n_candidates": 41
+  },
+  {
+    "gate": "G6",
+    "pass": true,
+    "logp": -0.018149852752685547,
+    "unique_source_rejected": true
+  },
+  {
+    "gate": "G7",
+    "pass": true,
+    "n_final": 5,
+    "overlap_sim": [],
+    "overlap_task": [],
+    "seal_status": "SEALED"
+  },
+  {
+    "gate": "G1",
+    "pass": null,
+    "status": "REQUIRES_WILAB_RUNTIME_AUDIT"
+  },
+  {
+    "gate": "G4",
+    "pass": null,
+    "status": "REQUIRES_WILAB_DELIVERY_TRACE_AUDIT"
+  },
+  {
+    "gate": "G8",
+    "pass": null,
+    "status": "REQUIRES_SAFETY_DENOMINATOR_AUDIT"
+  },
+  {
+    "gate": "G9",
+    "pass": null,
+    "status": "REQUIRES_PROVENANCE_INDEX_AFTER_RUNS"
+  }
+]

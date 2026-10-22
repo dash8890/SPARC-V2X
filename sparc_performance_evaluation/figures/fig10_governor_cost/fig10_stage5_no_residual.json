@@ -1,0 +1,221 @@
+{
+  "figure": "Fig.10",
+  "status": "DATA_ONLY_PARTIAL",
+  "excluded": "SPARC residual governor traces",
+  "panel_a_offered_byte_distribution": {
+    "B1_VA": {
+      "mean": 98272.97222222222,
+      "p50": 102234.0,
+      "p90": 163288.0,
+      "max": 173721.0,
+      "exceed_175kB": 0,
+      "n_pos": 36
+    },
+    "B2_MF": {
+      "mean": 96600.86111111111,
+      "p50": 109531.0,
+      "p90": 162965.0,
+      "max": 171267.0,
+      "exceed_175kB": 0,
+      "n_pos": 36
+    },
+    "B3_Direct": {
+      "mean": 116681.29629629629,
+      "p50": 124365.0,
+      "p90": 166598.0,
+      "max": 173468.0,
+      "exceed_175kB": 0,
+      "n_pos": 27
+    },
+    "B4_Lagrangian": {
+      "mean": 158289.16,
+      "p50": 133583.0,
+      "p90": 296277.0,
+      "max": 331897.0,
+      "exceed_175kB": 10,
+      "n_pos": 25
+    },
+    "B5_ITORA": {
+      "mean": 101683.47222222222,
+      "p50": 109531.0,
+      "p90": 165280.0,
+      "max": 173721.0,
+      "exceed_175kB": 0,
+      "n_pos": 36
+    }
+  },
+  "panel_b_block_fallback_reasons": {
+    "B1_VA": {
+      "none": 500
+    },
+    "B2_MF": {
+      "none": 500
+    },
+    "B3_Direct": {
+      "none": 500
+    },
+    "B4_Lagrangian": {
+      "disabled": 500
+    },
+    "B5_ITORA": {
+      "disabled": 500
+    }
+  },
+  "panel_c_inference_latency": {
+    "status": "MISSING"
+  },
+  "panel_d_value_vs_cost": {
+    "status": "DATA_ONLY",
+    "by_max_candidates": {
+      "8": {
+        "direct": {
+          "mean_V": 34.34331170399799,
+          "mean_R": 0.5286633303512218,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 5269.834000000001,
+          "mean_n_candidates": 0.51,
+          "n": 5
+        },
+        "value_aware": {
+          "mean_V": 31.769864283893583,
+          "mean_R": 0.483988474559243,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 5110.746,
+          "mean_n_candidates": 0.562,
+          "n": 5
+        }
+      },
+      "16": {
+        "direct": {
+          "mean_V": 37.45832868108788,
+          "mean_R": 0.5748344175851507,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 6046.198000000001,
+          "mean_n_candidates": 0.7520000000000001,
+          "n": 5
+        },
+        "value_aware": {
+          "mean_V": 32.461615922357296,
+          "mean_R": 0.4951068059089492,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 6320.014,
+          "mean_n_candidates": 0.8619999999999999,
+          "n": 5
+        }
+      },
+      "32": {
+        "direct": {
+          "mean_V": 39.34202477618262,
+          "mean_R": 0.6078164523488768,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 6310.276,
+          "mean_n_candidates": 1.094,
+          "n": 5
+        },
+        "value_aware": {
+          "mean_V": 32.461615922357296,
+          "mean_R": 0.4951068059089492,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 6954.170000000001,
+          "mean_n_candidates": 1.254,
+          "n": 5
+        }
+      },
+      "64": {
+        "direct": {
+          "mean_V": 37.97105657089449,
+          "mean_R": 0.5892801073945356,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 6300.789999999999,
+          "mean_n_candidates": 1.3820000000000001,
+          "n": 5
+        },
+        "value_aware": {
+          "mean_V": 32.461615922357296,
+          "mean_R": 0.4951068059089492,
+          "mean_P_viol": 0.0,
+          "mean_offered_bytes": 7075.6539999999995,
+          "mean_n_candidates": 1.468,
+          "n": 5
+        }
+      }
+    }
+  },
+  "per_method": {
+    "B1_VA": {
+      "n_positive_epochs": 36,
+      "offered_bytes_mean": 98272.97222222222,
+      "offered_bytes_p50": 102234.0,
+      "offered_bytes_p90": 163288.0,
+      "offered_bytes_max": 173721.0,
+      "exceed_175kB_count": 0,
+      "governor_reason_counts": {
+        "none": 500
+      },
+      "inference_latency": {
+        "status": "MISSING",
+        "reason": "P50/P95 inference latency not logged in these runs"
+      }
+    },
+    "B2_MF": {
+      "n_positive_epochs": 36,
+      "offered_bytes_mean": 96600.86111111111,
+      "offered_bytes_p50": 109531.0,
+      "offered_bytes_p90": 162965.0,
+      "offered_bytes_max": 171267.0,
+      "exceed_175kB_count": 0,
+      "governor_reason_counts": {
+        "none": 500
+      },
+      "inference_latency": {
+        "status": "MISSING",
+        "reason": "P50/P95 inference latency not logged in these runs"
+      }
+    },
+    "B3_Direct": {
+      "n_positive_epochs": 27,
+      "offered_bytes_mean": 116681.29629629629,
+      "offered_bytes_p50": 124365.0,
+      "offered_bytes_p90": 166598.0,
+      "offered_bytes_max": 173468.0,
+      "exceed_175kB_count": 0,
+      "governor_reason_counts": {
+        "none": 500
+      },
+      "inference_latency": {
+        "status": "MISSING",
+        "reason": "P50/P95 inference latency not logged in these runs"
+      }
+    },
+    "B4_Lagrangian": {
+      "n_positive_epochs": 25,
+      "offered_bytes_mean": 158289.16,
+      "offered_bytes_p50": 133583.0,
+      "offered_bytes_p90": 296277.0,
+      "offered_bytes_max": 331897.0,
+      "exceed_175kB_count": 10,
+      "governor_reason_counts": {
+        "disabled": 500
+      },
+      "inference_latency": {
+        "status": "MISSING",
+        "reason": "P50/P95 inference latency not logged in these runs"
+      }
+    },
+    "B5_ITORA": {
+      "n_positive_epochs": 36,
+      "offered_bytes_mean": 101683.47222222222,
+      "offered_bytes_p50": 109531.0,
+      "offered_bytes_p90": 165280.0,
+      "offered_bytes_max": 173721.0,
+      "exceed_175kB_count": 0,
+      "governor_reason_counts": {
+        "disabled": 500
+      },
+      "inference_latency": {
+        "status": "MISSING",
+        "reason": "P50/P95 inference latency not logged in these runs"
+      }
+    }
+  }
+}

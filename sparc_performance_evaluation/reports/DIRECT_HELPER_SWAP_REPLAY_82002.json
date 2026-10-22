@@ -1,0 +1,163 @@
+{
+  "status": "controlled_helper_swap_replay",
+  "authorization": {
+    "approved": "seed_82002_epoch_33_task_19_helper_2_to_0_only",
+    "training_authorized": false,
+    "architecture_change_authorized": false,
+    "implementation_authorized": false,
+    "substitution_82012_authorized": false,
+    "final_test_authorized": false,
+    "stop_authorized": false
+  },
+  "locked_spec": {
+    "sim_seed": 82002,
+    "task_seed": 182002,
+    "epoch": 33,
+    "task_id": 19,
+    "from_helper": 2,
+    "to_helper": 0,
+    "envelope_bytes": 175000,
+    "governor": "ON",
+    "density": 35,
+    "policy": "Direct PPO (frozen checkpoint)"
+  },
+  "policy_load": {
+    "missing": [
+      "cost_head.0.weight",
+      "cost_head.0.bias",
+      "cost_head.2.weight",
+      "cost_head.2.bias"
+    ],
+    "unexpected": [],
+    "ckpt": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\results\\wilab_direct_ppo_96ep\\checkpoint_best_delta_va.pt"
+  },
+  "intervention": {
+    "applied": true,
+    "epoch_assignment_after": {
+      "task_id": 19,
+      "helper_id": 0,
+      "source_id": 6,
+      "payload_bytes": 27218,
+      "packet_count": 28
+    },
+    "reference_assignment": {
+      "task_id": 19,
+      "helper_id": 2,
+      "source_id": 6,
+      "payload_bytes": 27218,
+      "packet_count": 28
+    },
+    "spec": {
+      "epoch": 33,
+      "task_id": 19,
+      "from_helper": 2,
+      "to_helper": 0,
+      "applied": true
+    }
+  },
+  "matched_prefix": {
+    "first_state_diff_epoch": null,
+    "first_assignment_diff_epoch": 33,
+    "expected_first_assignment_diff": 33,
+    "prefix_identical_through_epoch_32": true
+  },
+  "outcomes": {
+    "V_direct_ref": 49.95321222307849,
+    "V_helper_swap": 52.40714484384205,
+    "dV": 2.4539326207635597,
+    "run_episode_completed_value": 52.40714484384205,
+    "run_episode_return": 52.40714484384204,
+    "task_19_status_ref": "deadline_miss",
+    "task_19_status_swap": "completed",
+    "task_19_completed_after_swap": true,
+    "task_19_value": 2.4539326207635574,
+    "ref_completed_task_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      15,
+      17,
+      18,
+      20
+    ],
+    "swap_completed_task_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      11,
+      12,
+      15,
+      17,
+      18,
+      19,
+      20
+    ],
+    "lost_direct_completions": [],
+    "lost_value": 0,
+    "gained_completions": [
+      19
+    ],
+    "gained_value": 2.4539326207635574,
+    "preservation_ok": true
+  },
+  "safety": {
+    "ref": {
+      "n_epochs": 100,
+      "n_valid": 100,
+      "invalid_frac": 0.0,
+      "P_viol": 0.0,
+      "P_prr_fail": 0.0,
+      "P_p95_fail": 0.0,
+      "mean_prr_valid": 0.9791606534099396,
+      "mean_p95_valid": 26.91,
+      "PRR_cum": 0.979381443298969,
+      "P95_cum": 29,
+      "compliant": true
+    },
+    "swap": {
+      "n_epochs": 100,
+      "n_valid": 100,
+      "invalid_frac": 0.0,
+      "P_viol": 0.0,
+      "P_prr_fail": 0.0,
+      "P_p95_fail": 0.0,
+      "mean_prr_valid": 0.9791606534099396,
+      "mean_p95_valid": 26.91,
+      "PRR_cum": 0.979381443298969,
+      "P95_cum": 29,
+      "compliant": true
+    },
+    "P_viol_ref": 0.0,
+    "P_viol_swap": 0.0,
+    "safety_deteriorated": false
+  },
+  "downstream": {
+    "n_post_epoch_assignment_diffs": 0,
+    "first_post_epoch_assignment_diff": null,
+    "post_epoch_assignment_diffs_head": []
+  },
+  "hypothesis_result": "positive_feasibility_evidence_local",
+  "interpretation_note": "Local single-trajectory feasibility evidence only. Does not establish repeatable superiority over Direct or LVM, and does not authorize policy implementation or SPARC>LVM claims.",
+  "artifacts": {
+    "reference_episode": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\sparc_performance_evaluation\\results\\raw\\stage0_val_sparc_direct\\runs\\episode_0002",
+    "swap_episode": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\sparc_performance_evaluation\\results\\raw\\direct_helper_swap_replay_82002\\runs\\episode_0001",
+    "output_root": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\sparc_performance_evaluation\\results\\raw\\direct_helper_swap_replay_82002"
+  },
+  "wall_seconds": 31.033194303512573
+}

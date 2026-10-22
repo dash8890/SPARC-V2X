@@ -1,0 +1,96 @@
+# Table II source manifest — SPARC-V2X definitive WiLab closed-loop
+# Only values copied from frozen implementation/config. Mark unknowns explicitly.
+# Status: SPECIFICATION / PARTIAL FILL — not a claim that performance campaign is complete.
+
+manifest_version: 1
+method_name: SPARC-V2X
+definitive_training_run: results/wilab_residual_ppo_96ep_va_relative
+definitive_training_config: results/wilab_residual_ppo_96ep_va_relative/training_config.json
+checkpoint_selection: best mean delta completed_value vs corrected VA on validation seeds
+
+application:
+  controller_epochs: {value: 100, source: training_config.json}
+  tasks_per_source: {value: 3, source: training_config.json / TaskLayer}
+  spread_arrivals: {value: true, source: train_wilab_residual_ppo.py run_episode(..., spread_task_arrivals=True)}
+  unique_source_per_epoch: {value: true, source: train_wilab_residual_ppo.py unique_sources=True}
+  application_epoch_step_ms: {value: 10.0, source: task_layer.py (10.0 * epoch)}
+  finish_estimator: {value: "max(now+interval, ready) + cycles/cpu; interval=10ms", source: task_layer.py candidates/apply_radio_outcomes}
+  task_payload_bytes: {value: "UniformInteger[10000, 80000]", source: task_layer.py}
+  task_cycles: {value: "Uniform[1e7, 1e8]", source: task_layer.py}
+  task_relative_deadline_ms: {value: "Uniform[30, 150]", source: task_layer.py}
+  task_value: {value: "Uniform[1, 5]", source: task_layer.py}
+  helper_count: {value: "min(12, density)", source: task_layer.py}
+  helper_cpu_cycles_s: {value: "Uniform[2e8, 1e9]", source: task_layer.py}
+  source_count: {value: "max(1, density // 5)", source: task_layer.py}
+  computation_packet_bytes: {value: 1000, source: TaskLayer default}
+
+radio_wilab:
+  simulator: {value: WiLabV2Xsim NR-V2X Mode 2, source: run_wilab_closed_loop_episode.m / mode5G=1}
+  nominal_density_parameter: {value: 35, source: training_config.json}
+  density_physical_unit: {value: UNVERIFIED, note: "Config key [rho] set equal to density parameter; do not assert veh/km until WiLab docs/units confirmed"}
+  simulation_time_s: {value: 12.0, source: training_config.json}
+  generation_ms: {value: 100.0, source: train_wilab_residual_ppo.py run_episode positional args}
+  allocation_ms: {value: 20.0, source: train_wilab_residual_ppo.py run_episode positional args}
+  safety_payload_bytes: {value: 300, source: training_config.json}
+  cfg_template: {value: vendor/WiLabV2Xsim/ConfigFiles/test_trace.cfg, source: train_wilab_closed_loop.py}
+  SCS_NR_kHz: {value: 15, source: test_trace.cfg}
+  MCS_NR: {value: 7, source: test_trace.cfg}
+  nDMRS_NR: {value: 24, source: test_trace.cfg}
+  TypeOfScenario: {value: traces, source: test_trace.cfg}
+  Nlanes: {value: 3, source: test_trace.cfg}
+  roadLength: {value: 2000, source: test_trace.cfg}
+  beaconSizeBytes_template: {value: 190, source: test_trace.cfg, note: "template; runtime safety payload overridden by episode arg"}
+  raw_template: {value: 300, source: test_trace.cfg}
+
+governor:
+  max_bytes: {value: 175000, source: training_config.json / SafetyGovernor}
+  horizon_envelope_only: {value: true, source: train_wilab_residual_ppo.py}
+  budget_scope: {value: per_epoch, source: "sample_action used_bytes reset each epoch; governor per proposal"}
+  prr_floor: {value: 0.95, source: safety_governor.py default}
+  p95_delay_ceiling_ms: {value: 50.0, source: safety_governor.py default}
+  risk_epsilon_unused_when_horizon_only: {value: 0.05, source: safety_governor.py default}
+
+sparc_learning:
+  episodes: {value: 96, source: training_config.json}
+  rollouts_per_update: {value: 4, source: training_config.json}
+  planned_updates: {value: 24, source: training_config.json}
+  ppo_epochs: {value: 6, source: training_config.json}
+  minibatch_size: {value: 64, source: training_config.json}
+  lr: {value: 0.0003, source: training_config.json}
+  lr_final_frac: {value: 0.2, source: training_config.json}
+  entropy_coef: {value: 0.02, source: training_config.json}
+  entropy_final_frac: {value: 0.25, source: training_config.json}
+  target_kl: {value: 0.015, source: training_config.json}
+  logit_scale_alpha: {value: 100.0, source: training_config.json}
+  residual_gain_beta: {value: 1.0, source: training_config.json}
+  residual_zero_init: {value: true, source: training_config.json / train script}
+  va_relative: {value: true, source: training_config.json}
+  gamma: {value: 0.99, source: residual_ppo.py build_ppo_steps default}
+  gae_lambda: {value: 0.95, source: residual_ppo.py build_ppo_steps default}
+  clip_ratio: {value: 0.2, source: residual_ppo.py ppo_update default}
+  value_coef: {value: 0.5, source: residual_ppo.py ppo_update default}
+  grad_clip: {value: 1.0, source: residual_ppo.py ppo_update default}
+  va_deviation_eps: {value: 0.02, source: residual_ppo.py build_ppo_steps default}
+  va_shift_changed: {value: 1.0, source: residual_ppo.py (full delta_vs_va)}
+  va_shift_unchanged: {value: 0.25, source: residual_ppo.py (0.25 * delta_vs_va)}
+  actor_mlp: {value: "Linear(10,64)-Tanh-Linear(64,1)", source: residual_task_policy.py}
+  critic_mlp: {value: "Linear(10,64)-Tanh-Linear(64,1)", source: residual_task_policy.py}
+  optimizer: {value: Adam, source: train_wilab_residual_ppo.py}
+
+seeds_historical:
+  train_sim: {value: "72000 + episode", source: training_config.json seed_base}
+  train_task: {value: "182000 + episode", source: training_config.json task_seed_base}
+  validation_sim: {value: [82001, 82002, 82011, 82012], source: training_config.json}
+  validation_task: {value: [182001, 182002, 182011, 182012], source: training_config.json}
+  init_rng: {value: 616161, source: training_config.json initialization note}
+  final_test: {value: TBD_DISJOINT, note: "must not reuse train/validation; seal before Stage 4"}
+
+prospective_design_targets_not_completed:
+  final_scenarios_per_operating_point: 30
+  independent_training_seeds: 5
+  note: "Targets only; not preexisting facts."
+
+hardware_metadata:
+  cpu: TBD_FROM_HOST_AT_RUN
+  gpu: TBD_FROM_HOST_AT_RUN
+  matlab_version: {value: "R2026a path referenced in train_wilab_closed_loop.py", source: code comment/path}

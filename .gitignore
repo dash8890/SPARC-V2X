@@ -1,0 +1,49 @@
+# Python and OS caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.dll
+*.lib
+*.exe
+*.pyd
+.DS_Store
+Thumbs.db
+.mplconfig/
+.runtime-deps/
+.torch_runtime/
+*.log
+
+# Simulation runs and raw outputs (large temporary files)
+results/
+sparc_performance_evaluation/results/
+mobility_output/
+wilabv2xsim/
+*.tmp
+tmp*
+*.xls
+
+# Checkpoints and notebook outputs
+checkpoints/
+*.ipynb
+
+# Legacy superseded experimental modules (untracked)
+compute/
+services/
+tools/
+tests/
+analysis/
+mobility/
+
+# In experiments, ignore root-level exploratory scripts; keep WiLab closed loop & trace generator
+experiments/*
+!experiments/generate_wilab_20s_traces.py
+!experiments/wilab_closed_loop/
+!experiments/__init__.py
+
+# Unneeded legacy dumps and documents
+*.xml
+*.density.json
+*.bat
+project_*.md
+SAFE_ADMISSION_DOCUMENTATION.md

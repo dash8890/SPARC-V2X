@@ -1,0 +1,97 @@
+{
+  "status": "jipi_pretraining_correctness",
+  "gate": "PASS_WITH_SKIPPED_CLOSED_LOOP",
+  "n_pass": 15,
+  "n_fail": 0,
+  "n_skipped": 2,
+  "training_authorized": false,
+  "implementation_present": true,
+  "results": [
+    {
+      "id": "T1",
+      "status": "PASS",
+      "detail": "KEEP proposal matches Direct pack (n=4)"
+    },
+    {
+      "id": "T2",
+      "status": "PASS",
+      "detail": "all 4 enumerated edits feasible"
+    },
+    {
+      "id": "T3",
+      "status": "PASS",
+      "detail": "no edit exceeds 175000 bytes"
+    },
+    {
+      "id": "T4",
+      "status": "PASS",
+      "detail": "rebind changed tasks=[19]"
+    },
+    {
+      "id": "T5",
+      "status": "PASS",
+      "detail": "sub SubstituteEdit(remove_task_id=13, remove_helper_id=0, add_task_id=1, add_helper_id=2, edit_type='SUBSTITUTE')"
+    },
+    {
+      "id": "T6",
+      "status": "PASS",
+      "detail": "|proj_finish-cand_finish|=0.000ms (tol 5ms)"
+    },
+    {
+      "id": "T7",
+      "status": "PASS",
+      "detail": "feature keys ok; banned=[]"
+    },
+    {
+      "id": "T8",
+      "status": "PASS",
+      "detail": "Direct parameters unchanged and frozen"
+    },
+    {
+      "id": "T9",
+      "status": "PASS",
+      "detail": "logp=-0.375762 recomputed=-0.375762"
+    },
+    {
+      "id": "T10",
+      "status": "PASS",
+      "detail": "governor reason=none, intervened=False"
+    },
+    {
+      "id": "T11",
+      "status": "SKIPPED",
+      "detail": "Forced-KEEP full paired Direct trajectory requires MATLAB closed-loop; not run in default gate."
+    },
+    {
+      "id": "T12",
+      "status": "PASS",
+      "detail": "worst_controller_ms=4.70, n_edits=3, rebinds=2, subs=0 (budget 10ms)"
+    },
+    {
+      "id": "A",
+      "status": "PASS",
+      "detail": "rebind_available=True, delta_slack=6.417, C_queue=0.000, H=0.000"
+    },
+    {
+      "id": "B",
+      "status": "PASS",
+      "detail": "helper9 exposures=[(15, True, 2.646857184400823, 0.0795441605375229), (6, True, 2.646857184400823, 0.08310669361439252), (3, True, 2.646857184400823, 0.14018898032619392)]"
+    },
+    {
+      "id": "C",
+      "status": "PASS",
+      "detail": "feasible=True, added=3.738, displaced=1.482, nominal_delta=2.256, C_queue=0.000"
+    },
+    {
+      "id": "D",
+      "status": "SKIPPED",
+      "detail": "No-edit equivalence episode match requires MATLAB; not run in default gate."
+    },
+    {
+      "id": "E",
+      "status": "PASS",
+      "detail": "worst_offline_decision_ms=2.79; rows=[{'seed': 82001, 'epoch': 0, 'n_edits': 4, 'n_rebind': 2, 'n_sub': 1, 'enum_ms': 0.929300207644701, 'feat_ms': 0.5952999927103519, 'policy_ms': 0.9705000557005405, 'total_ms': 2.4951002560555935}, {'seed': 82002, 'epoch': 33, 'n_edits': 3, 'n_rebind': 2, 'n_sub': 0, 'enum_ms': 0.3823000006377697, 'feat_ms': 0.35239988937973976, 'policy_ms': 0.9245998226106167, 'total_ms': 1.6592997126281261}, {'seed': 82011, 'epoch': 0, 'n_edits': 3, 'n_rebind': 2, 'n_sub': 0, 'enum_ms': 1.119299791753292, 'feat_ms': 0.4770001396536827, 'policy_ms': 0.9674001485109329, 'total_ms': 2.5637000799179077}, {'seed': 82012, 'epoch': 33, 'n_edits': 4, 'n_rebind': 2, 'n_sub': 1, 'enum_ms': 1.2414995580911636, 'feat_ms': 0.5994997918605804, 'policy_ms': 0.9482000023126602, 'total_ms': 2.7891993522644043}]"
+    }
+  ],
+  "limitation_note": "T11/D closed-loop KEEP equivalence deferred (MATLAB). Offline Tests A\u2013C exercise locked Direct validation decision states."
+}

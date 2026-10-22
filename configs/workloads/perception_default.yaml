@@ -1,0 +1,5 @@
+workload_name: "perception_default"
+input_size_mb: 0.4
+cycles: 500000000
+output_size_kb: 64
+deadline_ms: 100

@@ -1,0 +1,164 @@
+[
+  {
+    "density": 35,
+    "method": "VAS",
+    "R_value": 0.4951068059089491,
+    "P_viol": 0.0,
+    "PRR": 0.9841469473976493,
+    "n": 5,
+    "source": "catchup_gov_on_d35_va_mf"
+  },
+  {
+    "density": 35,
+    "method": "LAS",
+    "R_value": 0.4908116403937739,
+    "P_viol": 0.0,
+    "PRR": 0.9845656209234838,
+    "n": 5,
+    "source": "catchup_gov_on_d35_va_mf"
+  },
+  {
+    "density": 35,
+    "method": "LVM",
+    "R_value": 0.6577846254834349,
+    "P_viol": 0.0,
+    "PRR": 0.9829457605267479,
+    "n": 5,
+    "source": "catchup_b4_density_d35"
+  },
+  {
+    "density": 35,
+    "method": "VLRO",
+    "R_value": 0.5061790069266879,
+    "P_viol": 0.0,
+    "PRR": 0.9845969638526091,
+    "n": 5,
+    "source": "catchup_envelope_itora_b175000"
+  },
+  {
+    "density": 35,
+    "method": "SPARC-N",
+    "R_value": 0.5892801073945356,
+    "P_viol": 0.0,
+    "PRR": 0.9853140208132423,
+    "n": 5,
+    "source": "catchup_gov_on_d35_direct"
+  },
+  {
+    "density": 35,
+    "method": "SPARC-S",
+    "R_value": 0.5892801073945356,
+    "P_viol": 0.0,
+    "PRR": 0.9853140208132423,
+    "n": 5,
+    "source": "catchup_gov_on_d35_direct"
+  },
+  {
+    "density": 50,
+    "method": "VAS",
+    "R_value": 0.2721474091091902,
+    "P_viol": 0.4,
+    "PRR": 0.9655982434594054,
+    "n": 5,
+    "source": "density_d50"
+  },
+  {
+    "density": 50,
+    "method": "LAS",
+    "R_value": 0.27404221279138236,
+    "P_viol": 0.4,
+    "PRR": 0.9655087328357688,
+    "n": 5,
+    "source": "density_d50"
+  },
+  {
+    "density": 50,
+    "method": "LVM",
+    "R_value": 0.6390225068010587,
+    "P_viol": 0.4,
+    "PRR": 0.9636203446800896,
+    "n": 5,
+    "source": "catchup_b4_density_d50"
+  },
+  {
+    "density": 50,
+    "method": "VLRO",
+    "R_value": 0.4409003921951847,
+    "P_viol": 0.4,
+    "PRR": 0.9646021508272483,
+    "n": 5,
+    "source": "density_d50"
+  },
+  {
+    "density": 50,
+    "method": "SPARC-N",
+    "R_value": 0.3481690504954472,
+    "P_viol": 0.4,
+    "PRR": 0.9660098485128722,
+    "n": 5,
+    "source": "catchup_fig11a_nominal_direct_on_d50"
+  },
+  {
+    "density": 50,
+    "method": "SPARC-S",
+    "R_value": 0.37654959506974295,
+    "P_viol": 0.4,
+    "PRR": 0.9655256427328242,
+    "n": 5,
+    "source": "catchup_fig11a_direct_d50_ft"
+  },
+  {
+    "density": 100,
+    "method": "VAS",
+    "R_value": 0.2426597369627517,
+    "P_viol": 0.38,
+    "PRR": 0.9520905893385313,
+    "n": 5,
+    "source": "density_d100"
+  },
+  {
+    "density": 100,
+    "method": "LAS",
+    "R_value": 0.2370211943746823,
+    "P_viol": 0.392,
+    "PRR": 0.9520811767088769,
+    "n": 5,
+    "source": "density_d100"
+  },
+  {
+    "density": 100,
+    "method": "LVM",
+    "R_value": 0.5836420529493532,
+    "P_viol": 0.398,
+    "PRR": 0.9503718112442517,
+    "n": 5,
+    "source": "catchup_b4_density_d100"
+  },
+  {
+    "density": 100,
+    "method": "VLRO",
+    "R_value": 0.34961717593705766,
+    "P_viol": 0.398,
+    "PRR": 0.951133905702007,
+    "n": 5,
+    "source": "density_d100"
+  },
+  {
+    "density": 100,
+    "method": "SPARC-N",
+    "R_value": 0.30753568251450214,
+    "P_viol": 0.386,
+    "PRR": 0.9522944332885778,
+    "n": 5,
+    "source": "catchup_fig11a_nominal_direct_on_d100"
+  },
+  {
+    "density": 100,
+    "method": "SPARC-S",
+    "R_value": 0.3139984689559294,
+    "P_viol": 0.392,
+    "PRR": 0.9518630516071308,
+    "n": 5,
+    "source": "catchup_fig11a_direct_d100_ft"
+  }
+]

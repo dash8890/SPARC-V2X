@@ -1,0 +1,137 @@
+[
+  {
+    "cell": "N_20",
+    "comparison": "Best Feasible Baseline (B5)",
+    "ref_method": "B5",
+    "ref_U": 33.87,
+    "pb_crl_U": 29.01,
+    "delta_U": -4.86,
+    "ci_95": [
+      -6.63,
+      -2.99
+    ],
+    "margin_1pct": 0.34,
+    "superior": false,
+    "verdict": "Tied / Negative"
+  },
+  {
+    "cell": "N_20",
+    "comparison": "B5' (Unshielded)",
+    "ref_method": "B5'",
+    "ref_U": 29.01,
+    "pb_crl_U": 29.01,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.29,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  },
+  {
+    "cell": "N_20",
+    "comparison": "B5'+shield",
+    "ref_method": "B5'+shield",
+    "ref_U": 29.01,
+    "pb_crl_U": 29.01,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.29,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  },
+  {
+    "cell": "N_35",
+    "comparison": "Best Feasible Baseline (B5)",
+    "ref_method": "B5",
+    "ref_U": 51.69,
+    "pb_crl_U": 42.77,
+    "delta_U": -8.92,
+    "ci_95": [
+      -13.82,
+      -2.89
+    ],
+    "margin_1pct": 0.52,
+    "superior": false,
+    "verdict": "Tied / Negative"
+  },
+  {
+    "cell": "N_35",
+    "comparison": "B5' (Unshielded)",
+    "ref_method": "B5'",
+    "ref_U": 42.77,
+    "pb_crl_U": 42.77,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.43,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  },
+  {
+    "cell": "N_35",
+    "comparison": "B5'+shield",
+    "ref_method": "B5'+shield",
+    "ref_U": 42.77,
+    "pb_crl_U": 42.77,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.43,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  },
+  {
+    "cell": "N_50",
+    "comparison": "Best Feasible Baseline (B1)",
+    "ref_method": "B1",
+    "ref_U": 37.33,
+    "pb_crl_U": 37.33,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.37,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  },
+  {
+    "cell": "N_50",
+    "comparison": "B5' (Unshielded)",
+    "ref_method": "B5'",
+    "ref_U": 37.33,
+    "pb_crl_U": 37.33,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.37,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  },
+  {
+    "cell": "N_50",
+    "comparison": "B5'+shield",
+    "ref_method": "B5'+shield",
+    "ref_U": 37.33,
+    "pb_crl_U": 37.33,
+    "delta_U": 0.0,
+    "ci_95": [
+      0.0,
+      0.0
+    ],
+    "margin_1pct": 0.37,
+    "superior": false,
+    "verdict": "Equivalent (inside margin)"
+  }
+]

@@ -1,0 +1,52 @@
+{
+  "netgenerate": [
+    "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\netgenerate",
+    "--grid",
+    "--grid.x-number",
+    "10",
+    "--grid.y-number",
+    "1",
+    "--grid.length",
+    "250",
+    "--default.lanenumber",
+    "3",
+    "--output-file",
+    "mobility_output\\highway_seed42.net.xml",
+    "--seed",
+    "42"
+  ],
+  "randomTrips": [
+    "python",
+    "C:\\Program Files (x86)\\Eclipse\\Sumo\\tools\\randomTrips.py",
+    "-n",
+    "mobility_output\\highway_seed42.net.xml",
+    "-o",
+    "mobility_output\\highway_seed42.trips.xml",
+    "-r",
+    "mobility_output\\highway_seed42.rou.xml",
+    "-p",
+    "0.6666666666666666",
+    "-e",
+    "60",
+    "--seed",
+    "42",
+    "--max-distance",
+    "2000"
+  ],
+  "sumo": [
+    "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\sumo",
+    "-n",
+    "mobility_output\\highway_seed42.net.xml",
+    "-r",
+    "mobility_output\\highway_seed42.rou.xml",
+    "--fcd-output",
+    "mobility_output\\highway_seed42.fcd.xml",
+    "--step-length",
+    "0.1",
+    "--seed",
+    "42",
+    "--no-step-log",
+    "--max-num-vehicles",
+    "200"
+  ]
+}

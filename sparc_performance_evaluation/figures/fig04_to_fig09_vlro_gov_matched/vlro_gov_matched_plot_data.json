@@ -1,0 +1,102 @@
+{
+  "protocol": "VLRO governor-matched (same SafetyGovernor + B_max as SPARC-V2X)",
+  "vlro_density": {
+    "20": {
+      "R_value": 0.5323563254745458,
+      "P_viol": 0.0,
+      "mean_prr": 1.0,
+      "mean_p95": 38.146,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d20"
+    },
+    "25": {
+      "R_value": 0.49237719430071253,
+      "P_viol": 0.118,
+      "mean_prr": 0.9703839678016183,
+      "mean_p95": 22.676,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d25"
+    },
+    "30": {
+      "R_value": 0.5177910302133463,
+      "P_viol": 0.0,
+      "mean_prr": 0.9911136721464803,
+      "mean_p95": 22.94,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d30"
+    },
+    "35": {
+      "R_value": 0.5061790069266879,
+      "P_viol": 0.0,
+      "mean_prr": 0.9845969638526091,
+      "mean_p95": 22.314,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d35"
+    },
+    "40": {
+      "R_value": 0.3715890825941064,
+      "P_viol": 0.2,
+      "mean_prr": 0.9704177659932944,
+      "mean_p95": 22.11,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d40"
+    },
+    "45": {
+      "R_value": 0.3584452376450271,
+      "P_viol": 0.2,
+      "mean_prr": 0.9641321515910698,
+      "mean_p95": 20.962,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d45"
+    },
+    "50": {
+      "R_value": 0.26997251368232017,
+      "P_viol": 0.4,
+      "mean_prr": 0.965249525911833,
+      "mean_p95": 21.056,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d50"
+    },
+    "100": {
+      "R_value": 0.22247915020323644,
+      "P_viol": 0.398,
+      "mean_prr": 0.9514323585260291,
+      "mean_p95": 19.924,
+      "n": 5,
+      "gov_intervened_mean": 0.0,
+      "source": "vlro_gov_matched_density_d100"
+    }
+  },
+  "vlro_envelope_R": {
+    "100000": 0.49183240655685134,
+    "175000": 0.5061790069266879,
+    "250000": 0.5061790069266879,
+    "350000": 0.5061790069266879
+  },
+  "vlro_load_R": {
+    "2": 0.4651090432691308,
+    "3": 0.5061790069266879,
+    "4": 0.4822942363935326,
+    "5": 0.4851770587130021,
+    "6": 0.4666954993542921
+  },
+  "vlro_deadline_R": {
+    "0.5": 0.1547552852764147,
+    "1.0": 0.5061790069266879,
+    "1.5": 0.7563042430525622,
+    "2.0": 0.87294306179057
+  },
+  "vlro_k_R": {
+    "8": 0.49099927233132296,
+    "16": 0.5003716714466774,
+    "32": 0.5003716714466774,
+    "64": 0.5061790069266879
+  }
+}

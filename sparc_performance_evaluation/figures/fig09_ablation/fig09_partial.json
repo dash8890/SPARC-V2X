@@ -1,0 +1,39 @@
+{
+  "figure": "Fig.9 partial",
+  "note": "A0 vs A2(=VA) and MF comparator on final-test; other ablations pending",
+  "panel_a": {
+    "sparc_minus_value_aware": {
+      "delta_R": {
+        "mean": 0.0552684636197161,
+        "ci95_low": 0.005807335480010545,
+        "ci95_high": 0.1261888933591835,
+        "n": 5
+      },
+      "delta_V": {
+        "mean": 3.3486371067956533,
+        "ci95_low": 0.39903355035866356,
+        "ci95_high": 7.240759849488887,
+        "n": 5
+      }
+    },
+    "sparc_minus_minfinish": {
+      "delta_R": {
+        "mean": 0.05956362913489137,
+        "ci95_low": -0.010114882036469475,
+        "ci95_high": 0.1368164388720944,
+        "n": 5
+      },
+      "delta_V": {
+        "mean": 3.652479652241607,
+        "ci95_low": -0.7961975337209595,
+        "ci95_high": 8.101156838204172,
+        "n": 5
+      }
+    }
+  },
+  "panel_b_P_viol": {
+    "minfinish": 0.0,
+    "residual": 0.0,
+    "value_aware": 0.0
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "label": "Table II \u2014 primary simulation/learning parameters",
+  "split": "definitive historical SPARC training config",
+  "values": {
+    "episodes": 96,
+    "rollouts_per_update": 4,
+    "ppo_epochs": 6,
+    "minibatch_size": 64,
+    "controller_epochs": 100,
+    "density": 35,
+    "tasks_per_source": 3,
+    "seed_base": 72000,
+    "task_seed_base": 182000,
+    "envelope_bytes": 175000,
+    "safety_payload_bytes": 300,
+    "simulation_time": 12.0,
+    "lr": 0.0003,
+    "lr_final_frac": 0.2,
+    "logit_scale": 100.0,
+    "residual_gain": 1.0,
+    "entropy_coef": 0.02,
+    "entropy_final_frac": 0.25,
+    "target_kl": 0.015,
+    "va_relative": true,
+    "eval_every_updates": 2,
+    "eval_sim_seeds": [
+      82001,
+      82002,
+      82011,
+      82012
+    ],
+    "eval_task_seeds": [
+      182001,
+      182002,
+      182011,
+      182012
+    ],
+    "output_root": "results\\wilab_residual_ppo_96ep_va_relative",
+    "checkpoint_out": "checkpoints\\wilab_residual_ppo_96ep_va_relative.pt",
+    "smoke": false,
+    "algorithm": "Residual PPO + scaled logits + VA-relative GAE shift + LR/entropy decay",
+    "initialization": "fresh; residual output exactly zero; seed 616161",
+    "selection_rule": "keep checkpoint with best mean completed_value delta vs corrected VA",
+    "logit_fixing": "logits = 100 * (analytic + 1 * residual)",
+    "admission": "175-kB governor enforced before sampling; legacy action-count shield bypassed",
+    "task_process": "three tasks/source spread uniformly across the episode; absolute deadlines",
+    "attribution": "at most one selected task per source per epoch",
+    "counterfactual_replay": false,
+    "off_policy_replay": false,
+    "planned_updates": 24
+  },
+  "manifest_path": "protocol/parameter_manifest.yaml",
+  "notes": [
+    "Density physical unit remains UNVERIFIED (rho parameter).",
+    "Byte budget is per-epoch under horizon_envelope_only."
+  ]
+}

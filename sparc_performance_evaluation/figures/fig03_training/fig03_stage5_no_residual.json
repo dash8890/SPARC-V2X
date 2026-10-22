@@ -1,0 +1,1041 @@
+{
+  "figure": "Fig.3",
+  "status": "DATA_ONLY",
+  "excluded": "SPARC residual training/validation series",
+  "included": "Direct PPO training metrics + fixed_evaluation where available",
+  "panel_a_validation_delta_V_direct_vs_va": [
+    {
+      "update": 0,
+      "mean_delta_V_direct_minus_va": 6.965529922324095,
+      "n": 12
+    },
+    {
+      "update": 2,
+      "mean_delta_V_direct_minus_va": 3.9934394553887387,
+      "n": 12
+    },
+    {
+      "update": 4,
+      "mean_delta_V_direct_minus_va": 7.688902595005199,
+      "n": 12
+    },
+    {
+      "update": 6,
+      "mean_delta_V_direct_minus_va": 7.846606970526282,
+      "n": 12
+    },
+    {
+      "update": 8,
+      "mean_delta_V_direct_minus_va": 7.846606970526282,
+      "n": 12
+    },
+    {
+      "update": 10,
+      "mean_delta_V_direct_minus_va": 7.62590901482616,
+      "n": 12
+    },
+    {
+      "update": 12,
+      "mean_delta_V_direct_minus_va": 7.62590901482616,
+      "n": 12
+    },
+    {
+      "update": 14,
+      "mean_delta_V_direct_minus_va": 8.020900008987775,
+      "n": 12
+    },
+    {
+      "update": 16,
+      "mean_delta_V_direct_minus_va": 8.020900008987775,
+      "n": 12
+    },
+    {
+      "update": 18,
+      "mean_delta_V_direct_minus_va": 8.020900008987775,
+      "n": 12
+    },
+    {
+      "update": 20,
+      "mean_delta_V_direct_minus_va": 8.020900008987775,
+      "n": 12
+    },
+    {
+      "update": 22,
+      "mean_delta_V_direct_minus_va": 8.020900008987775,
+      "n": 12
+    },
+    {
+      "update": 24,
+      "mean_delta_V_direct_minus_va": 8.020900008987775,
+      "n": 12
+    }
+  ],
+  "panel_b_train_diagnostics": [
+    {
+      "episode": 0,
+      "update": null,
+      "return": 30.334034931697893,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 1,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 2,
+      "update": null,
+      "return": 45.542408455023015,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 3,
+      "update": 1,
+      "return": 42.95936434052132,
+      "deviation_fraction": 0.05,
+      "entropy": 2.343528230985006,
+      "approx_kl": -0.00602124853079052,
+      "actor_loss": -0.0663889831020718,
+      "value_loss": 0.030570083608229954
+    },
+    {
+      "episode": 4,
+      "update": null,
+      "return": 34.68721549382141,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 5,
+      "update": null,
+      "return": 32.30222929410908,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 6,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 7,
+      "update": 2,
+      "return": 35.78037111981104,
+      "deviation_fraction": 0.05,
+      "entropy": 2.713978966077169,
+      "approx_kl": -0.02300265485731264,
+      "actor_loss": -0.01263028807782877,
+      "value_loss": 0.0215809540823102
+    },
+    {
+      "episode": 8,
+      "update": null,
+      "return": 28.09716907814031,
+      "deviation_fraction": 0.06,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 9,
+      "update": null,
+      "return": 42.07110481403222,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 10,
+      "update": null,
+      "return": 45.15842822688753,
+      "deviation_fraction": 0.06,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 11,
+      "update": 3,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": 2.586224397023519,
+      "approx_kl": 0.010863489859427014,
+      "actor_loss": 0.0003588006446887763,
+      "value_loss": 0.026495860268672306
+    },
+    {
+      "episode": 12,
+      "update": null,
+      "return": 35.74035788729207,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 13,
+      "update": null,
+      "return": 43.851991904091406,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 14,
+      "update": null,
+      "return": 52.38382767378763,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 15,
+      "update": 4,
+      "return": 44.51318645857828,
+      "deviation_fraction": 0.06,
+      "entropy": 2.357602596282959,
+      "approx_kl": 0.013985106721520424,
+      "actor_loss": -0.008706177954399466,
+      "value_loss": 0.024232840165495872
+    },
+    {
+      "episode": 16,
+      "update": null,
+      "return": 34.83740978277112,
+      "deviation_fraction": 0.06,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 17,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 18,
+      "update": null,
+      "return": 32.31004719429238,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 19,
+      "update": 5,
+      "return": 47.26519366596797,
+      "deviation_fraction": 0.06,
+      "entropy": 2.568185488382975,
+      "approx_kl": -0.0031179134966805577,
+      "actor_loss": -0.013549590940345765,
+      "value_loss": 0.018950688497473795
+    },
+    {
+      "episode": 20,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 21,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 22,
+      "update": null,
+      "return": 41.77642981674298,
+      "deviation_fraction": 0.07,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 23,
+      "update": 6,
+      "return": 19.451394697356356,
+      "deviation_fraction": 0.04,
+      "entropy": 2.30315109093984,
+      "approx_kl": -0.04720771157493194,
+      "actor_loss": -0.015348967108311129,
+      "value_loss": 0.01807622580478589
+    },
+    {
+      "episode": 24,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 25,
+      "update": null,
+      "return": 28.456231071316825,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 26,
+      "update": null,
+      "return": 34.63496277058376,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 27,
+      "update": 7,
+      "return": 49.81560289659897,
+      "deviation_fraction": 0.04,
+      "entropy": 2.630276083946228,
+      "approx_kl": 0.021490191109478474,
+      "actor_loss": -0.002905564548979722,
+      "value_loss": 0.014317804016172886
+    },
+    {
+      "episode": 28,
+      "update": null,
+      "return": 44.597453617392915,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 29,
+      "update": null,
+      "return": 34.94593736644025,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 30,
+      "update": null,
+      "return": 29.633085458268752,
+      "deviation_fraction": 0.02,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 31,
+      "update": 8,
+      "return": 38.414807350282324,
+      "deviation_fraction": 0.04,
+      "entropy": 2.2245351473490396,
+      "approx_kl": -0.003790604998357594,
+      "actor_loss": 0.007487392825025492,
+      "value_loss": 0.015265583992004395
+    },
+    {
+      "episode": 32,
+      "update": null,
+      "return": 23.29518164482338,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 33,
+      "update": null,
+      "return": 42.34168672508163,
+      "deviation_fraction": 0.06,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 34,
+      "update": null,
+      "return": 40.34263125153848,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 35,
+      "update": 9,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": 1.9161296089490254,
+      "approx_kl": -0.00011602664987246196,
+      "actor_loss": -0.010216763243079185,
+      "value_loss": 0.011234930406014124
+    },
+    {
+      "episode": 36,
+      "update": null,
+      "return": 30.195259759895137,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 37,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 38,
+      "update": null,
+      "return": 35.42714494156517,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 39,
+      "update": 10,
+      "return": 38.58210499522943,
+      "deviation_fraction": 0.04,
+      "entropy": 1.7559470733006795,
+      "approx_kl": -0.009669464081525803,
+      "actor_loss": -0.013612550582426275,
+      "value_loss": 0.009881128557026386
+    },
+    {
+      "episode": 40,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 41,
+      "update": null,
+      "return": 35.6039340377149,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 42,
+      "update": null,
+      "return": 38.62372401665417,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 43,
+      "update": 11,
+      "return": 39.06102984491267,
+      "deviation_fraction": 0.05,
+      "entropy": 2.112200935681661,
+      "approx_kl": -0.0068663525162264705,
+      "actor_loss": 0.004254095569356482,
+      "value_loss": 0.010302541001389423
+    },
+    {
+      "episode": 44,
+      "update": null,
+      "return": 37.421930251598674,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 45,
+      "update": null,
+      "return": 38.50692684090012,
+      "deviation_fraction": 0.07,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 46,
+      "update": null,
+      "return": 36.2667036120522,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 47,
+      "update": 12,
+      "return": 42.516468634898075,
+      "deviation_fraction": 0.07,
+      "entropy": 2.2947510480880737,
+      "approx_kl": 0.003251645241107326,
+      "actor_loss": -0.0024933724505696495,
+      "value_loss": 0.009343026283507546
+    },
+    {
+      "episode": 48,
+      "update": null,
+      "return": 26.391297931220663,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 49,
+      "update": null,
+      "return": 42.92526178231384,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 50,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 51,
+      "update": 13,
+      "return": 34.10102556730958,
+      "deviation_fraction": 0.06,
+      "entropy": 2.305464744567871,
+      "approx_kl": -0.00971816573292017,
+      "actor_loss": -0.015625237675738462,
+      "value_loss": 0.008504329792534312
+    },
+    {
+      "episode": 52,
+      "update": null,
+      "return": 41.65323134120661,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 53,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 54,
+      "update": null,
+      "return": 28.396661683122634,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 55,
+      "update": 14,
+      "return": 20.933425591907753,
+      "deviation_fraction": 0.04,
+      "entropy": 2.3823013305664062,
+      "approx_kl": 0.012365180999040604,
+      "actor_loss": -0.005453793331980705,
+      "value_loss": 0.0084854606539011
+    },
+    {
+      "episode": 56,
+      "update": null,
+      "return": 36.94077099130804,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 57,
+      "update": null,
+      "return": 44.338691562796434,
+      "deviation_fraction": 0.06,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 58,
+      "update": null,
+      "return": 47.60853627806656,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 59,
+      "update": 15,
+      "return": 40.43128931429302,
+      "deviation_fraction": 0.05,
+      "entropy": 2.3703538179397583,
+      "approx_kl": -0.014552158691609899,
+      "actor_loss": -0.002548452360012258,
+      "value_loss": 0.013874063889185587
+    },
+    {
+      "episode": 60,
+      "update": null,
+      "return": 31.55397171493391,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 61,
+      "update": null,
+      "return": 48.98502328871448,
+      "deviation_fraction": 0.07,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 62,
+      "update": null,
+      "return": 34.97972532281598,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 63,
+      "update": 16,
+      "return": 42.44309169544151,
+      "deviation_fraction": 0.06,
+      "entropy": 2.36991556485494,
+      "approx_kl": 0.008295831503346562,
+      "actor_loss": 0.0015260598941139551,
+      "value_loss": 0.00893504312261939
+    },
+    {
+      "episode": 64,
+      "update": null,
+      "return": 20.00974943620822,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 65,
+      "update": null,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 66,
+      "update": null,
+      "return": 32.06711019645492,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 67,
+      "update": 17,
+      "return": 23.3691152317179,
+      "deviation_fraction": 0.03,
+      "entropy": 2.229203462600708,
+      "approx_kl": -0.016053031509121258,
+      "actor_loss": -0.004949616675730795,
+      "value_loss": 0.00409558427054435
+    },
+    {
+      "episode": 68,
+      "update": null,
+      "return": 29.572807734970123,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 69,
+      "update": null,
+      "return": 46.03134311505229,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 70,
+      "update": null,
+      "return": 30.81298202912617,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 71,
+      "update": 18,
+      "return": 29.56157513062751,
+      "deviation_fraction": 0.04,
+      "entropy": 2.179178555806478,
+      "approx_kl": 1.087486756053598e-05,
+      "actor_loss": 0.0029434417452042227,
+      "value_loss": 0.008164484286680818
+    },
+    {
+      "episode": 72,
+      "update": null,
+      "return": 48.29695652525218,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 73,
+      "update": null,
+      "return": 40.56158399931062,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 74,
+      "update": null,
+      "return": 28.478827581135555,
+      "deviation_fraction": 0.04,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 75,
+      "update": 19,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": 1.8848206003506978,
+      "approx_kl": 0.0024162344246481857,
+      "actor_loss": -0.007778341183438897,
+      "value_loss": 0.011320007809748253
+    },
+    {
+      "episode": 76,
+      "update": null,
+      "return": 45.82696535084164,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 77,
+      "update": null,
+      "return": 46.48629028575359,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 78,
+      "update": null,
+      "return": 14.952354597535248,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 79,
+      "update": 20,
+      "return": 30.130952665124852,
+      "deviation_fraction": 0.04,
+      "entropy": 2.189148783683777,
+      "approx_kl": -0.0004995703638996929,
+      "actor_loss": -0.017262168151016038,
+      "value_loss": 0.008760813934107622
+    },
+    {
+      "episode": 80,
+      "update": null,
+      "return": 31.23297092812613,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 81,
+      "update": null,
+      "return": 29.682569110066094,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 82,
+      "update": null,
+      "return": 38.637988505373386,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 83,
+      "update": 21,
+      "return": 50.32665463017261,
+      "deviation_fraction": 0.06,
+      "entropy": 2.23870735168457,
+      "approx_kl": 0.01026359866373241,
+      "actor_loss": -0.009757534024261272,
+      "value_loss": 0.006744519434869289
+    },
+    {
+      "episode": 84,
+      "update": null,
+      "return": 32.41561866442481,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 85,
+      "update": null,
+      "return": 38.739429005148025,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 86,
+      "update": null,
+      "return": 37.02198936508651,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 87,
+      "update": 22,
+      "return": 53.57429529459138,
+      "deviation_fraction": 0.06,
+      "entropy": 2.114038427670797,
+      "approx_kl": 0.010433907659413913,
+      "actor_loss": 0.0038681806869466464,
+      "value_loss": 0.00827860739082098
+    },
+    {
+      "episode": 88,
+      "update": null,
+      "return": 26.944362670980993,
+      "deviation_fraction": 0.02,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 89,
+      "update": null,
+      "return": 60.29921905445003,
+      "deviation_fraction": 0.05,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 90,
+      "update": null,
+      "return": 36.84825920955419,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 91,
+      "update": 23,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": 1.829618513584137,
+      "approx_kl": 0.0001762030260579195,
+      "actor_loss": 0.00017214112668787843,
+      "value_loss": 0.008814718263844648
+    },
+    {
+      "episode": 92,
+      "update": null,
+      "return": 35.16818677401042,
+      "deviation_fraction": 0.03,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 93,
+      "update": null,
+      "return": 51.88022242288018,
+      "deviation_fraction": 0.06,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 94,
+      "update": null,
+      "return": 39.376889041792204,
+      "deviation_fraction": 0.15,
+      "entropy": null,
+      "approx_kl": null,
+      "actor_loss": null,
+      "value_loss": null
+    },
+    {
+      "episode": 95,
+      "update": 24,
+      "return": 0.0,
+      "deviation_fraction": 0.0,
+      "entropy": 2.0612080097198486,
+      "approx_kl": -0.0008864408979813257,
+      "actor_loss": -0.000497140921652317,
+      "value_loss": 0.010261463932693005
+    }
+  ],
+  "train_return_summary": {
+    "n": 96,
+    "mean": 31.01806504733219,
+    "roll16_end": 35.134290917291054
+  },
+  "note": "VA-relative learning panel is N/A for Direct (no VA anchor). Panel (a) is Direct-VA validation delta when eval logs permit."
+}

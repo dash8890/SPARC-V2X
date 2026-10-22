@@ -1,0 +1,43 @@
+{
+  "status": "algorithm_specification_only",
+  "name": "JIPI-SPARC",
+  "full_name": "Joint-Impact Pack-Edit Inference for SPARC",
+  "relationship_to_stage1": "new_candidate_not_stage1_reopening",
+  "sparc_reference": "prior_Direct_PPO_immutable",
+  "final_test_sealed": true,
+  "hypothesis": "Learn opportunity cost of at-most-one pack edit (KEEP|rebind|substitute) using joint-impact features including helper-queue externalities.",
+  "design": {
+    "base_scheduler": "frozen_Direct_PPO",
+    "learned_component": "edit_selection_PPO",
+    "edits": ["KEEP", "helper_rebind", "task_substitution"],
+    "max_edits_per_epoch": 1,
+    "byte_envelope": 175000,
+    "governor": "unchanged",
+    "radio": "NR-V2X_Mode2_unchanged",
+    "reward": "realized_deadline_valid_completed_value",
+    "stop_action": false,
+    "primary_comparator": "strongest_of_five_matched_methods"
+  },
+  "motivating_diagnostics": {
+    "stage1": "closed_value_loss_from_wholesale_rescoring",
+    "local_beneficial_rebind": "82002_task19_helper_2_to_0_dV_plus_2.454",
+    "universal_rebind_harm_screen": "FAIL_3_of_15_collateral_helper9_task9",
+    "analytic_substitution": "82012_task1_vs_task13_nominal_plus_2.256"
+  },
+  "authorization": {
+    "specification": true,
+    "implementation": true,
+    "pretraining_correctness_tests": true,
+    "pretraining_gate": "PASS_WITH_SKIPPED_CLOSED_LOOP",
+    "conditional_pass_verification": "PASS",
+    "training": false,
+    "additional_replay": false,
+    "validation_eval": false,
+    "final_test": false,
+    "manuscript_revision": false,
+    "architecture_change_to_direct_or_governor": false
+  },
+  "next_gate": "Human review of JIPI_PRETRAINING_CORRECTNESS.md. Explicit approval required before training. Optional: MATLAB T11/D KEEP equivalence.",
+  "report_md": "JIPI_SPARC_ALGORITHM_SPECIFICATION.md",
+  "correctness_report": "JIPI_PRETRAINING_CORRECTNESS.md"
+}

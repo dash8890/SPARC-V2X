@@ -1,0 +1,72 @@
+{
+  "figure": "Fig.9",
+  "status": "DATA_ONLY_RESTRICTED",
+  "excluded": [
+    "A0 SPARC residual",
+    "A1",
+    "A3",
+    "A5",
+    "A6"
+  ],
+  "included": [
+    "A2(=B1 VA)",
+    "A4(=B3 Direct)",
+    "MF comparator"
+  ],
+  "panel_a_paired_delta_R_from_VA": {
+    "direct_minus_value_aware": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": 5.509440648537194,
+        "ci95_low": 1.1562117646657781,
+        "ci95_high": 10.64874228604991,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": 0.09417330148558645,
+        "ci95_low": 0.018860741006145244,
+        "ci95_high": 0.19110177140148582,
+        "n": 5
+      },
+      "wins": 4,
+      "ties": 1,
+      "losses": 0
+    },
+    "mf_minus_value_aware": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": -0.3038425454459535,
+        "ci95_low": -2.795464230349892,
+        "ci95_high": 1.7928466261194345,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": -0.00429516551517527,
+        "ci95_low": -0.038397551580750235,
+        "ci95_high": 0.024697690654972227,
+        "n": 5
+      },
+      "wins": 2,
+      "ties": 2,
+      "losses": 1
+    }
+  },
+  "panel_b_P_viol": {
+    "value_aware": 0.0,
+    "minfinish": 0.0,
+    "direct": 0.0
+  },
+  "note": "Residual-architecture ablations omitted per Stage-5 exclude-residual request."
+}

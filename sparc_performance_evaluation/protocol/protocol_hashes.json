@@ -1,0 +1,55 @@
+{
+  "protocol_id": "sparc_v2x_performance_evaluation_rev1",
+  "status": "specification_frozen_partial_params",
+  "created_note": "Hashes fingerprint current worktree sources at package creation; recompute before Stage 4 seal.",
+  "source_fingerprints_sha256_16": {
+    "experiments/wilab_closed_loop/train_wilab_residual_ppo.py": "50d3cb632d46d495",
+    "experiments/wilab_closed_loop/train_wilab_closed_loop.py": "e3fad0fd2a25b1ce",
+    "experiments/wilab_closed_loop/task_layer.py": "35cb8179e15bed9f",
+    "controllers/rl/residual_task_policy.py": "c13f8e300c735d7b",
+    "controllers/rl/residual_ppo.py": "31e5c8052219ff1f",
+    "controllers/rl/safety_governor.py": "8092630e5410d6a4",
+    "results/wilab_residual_ppo_96ep_va_relative/training_config.json": "61417ec82fc53e5d"
+  },
+  "envelope_audit": {
+    "budget_scope": "per_epoch",
+    "horizon_envelope_only": true,
+    "conclusion": "B_max is per-epoch offered-byte budget under forced_byte_budget + SafetyGovernor; not a cumulative episode budget."
+  },
+  "seed_registry_status": "train_validation_final_sealed_n5",
+  "final_test_seal": {
+    "file": "protocol/final_test_seeds.json",
+    "sha256_16": "8bc8eab182600d15",
+    "n": 5,
+    "sealed_at_utc": "2026-10-14T06:08:56.558124+00:00",
+    "partition": "SEED_PARTITION.md"
+  },
+  "excluded_from_sparc": [
+    "cloned-state counterfactual training",
+    "residual regression loss",
+    "MF deployment gate",
+    "cardinality shield",
+    "shield-coefficient risk prediction",
+    "variable-delay execution / discarded-assignment model"
+  ],
+  "lock": {
+    "status": "PARTIAL",
+    "lockable": false,
+    "criteria_file": "protocol/LOCK_CRITERIA.md",
+    "hard_blockers_remaining": [
+      "density_envelope_workload_radio_robustness_sweeps",
+      "ablations_A1_A3_A5_A6",
+      "B4_lagrangian_ppo",
+      "B5_itora_inspired_after_mapping_audit",
+      "final_test_complete_six_methods",
+      "fig3_with_direct_ppo",
+      "tables_iii_iv_final"
+    ]
+  },
+  "seed_partition": {
+    "training_runs_per_learned_config": 1,
+    "validation_paired_scenarios": 4,
+    "final_test_paired_seeds_per_operating_point": 5,
+    "calibration": "reuse_existing"
+  }
+}

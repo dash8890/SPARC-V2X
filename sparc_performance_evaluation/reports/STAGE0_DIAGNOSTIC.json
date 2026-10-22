@@ -1,0 +1,268 @@
+{
+  "stage": 0,
+  "density": 35,
+  "envelope_bytes": 175000,
+  "governor": "ON",
+  "seed_file": "sparc_performance_evaluation/protocol/validation_seeds.json",
+  "sealed_final_test_used": false,
+  "methods": [
+    "VAS",
+    "LAS",
+    "VLRO",
+    "SPARC",
+    "LVM"
+  ],
+  "outcomes": {
+    "VAS": {
+      "n": 4,
+      "mean_V": 38.03618296183004,
+      "mean_R": 0.5941112424052875,
+      "mean_P_viol": 0.0,
+      "mean_offered_bytes": 8652.685,
+      "seeds": [
+        [
+          82001,
+          182001
+        ],
+        [
+          82002,
+          182002
+        ],
+        [
+          82011,
+          182011
+        ],
+        [
+          82012,
+          182012
+        ]
+      ]
+    },
+    "LAS": {
+      "n": 4,
+      "mean_V": 36.299475662754844,
+      "mean_R": 0.5661905936216487,
+      "mean_P_viol": 0.0,
+      "mean_offered_bytes": 8207.002499999999,
+      "seeds": [
+        [
+          82001,
+          182001
+        ],
+        [
+          82002,
+          182002
+        ],
+        [
+          82011,
+          182011
+        ],
+        [
+          82012,
+          182012
+        ]
+      ]
+    },
+    "VLRO": {
+      "n": 4,
+      "mean_V": 39.97852480813976,
+      "mean_R": 0.6240401562143744,
+      "mean_P_viol": 0.0,
+      "mean_offered_bytes": 9881.055,
+      "seeds": [
+        [
+          82001,
+          182001
+        ],
+        [
+          82002,
+          182002
+        ],
+        [
+          82011,
+          182011
+        ],
+        [
+          82012,
+          182012
+        ]
+      ]
+    },
+    "SPARC": {
+      "n": 4,
+      "mean_V": 46.05708297081782,
+      "mean_R": 0.7181494790095281,
+      "mean_P_viol": 0.0,
+      "mean_offered_bytes": 7697.545,
+      "seeds": [
+        [
+          82001,
+          182001
+        ],
+        [
+          82002,
+          182002
+        ],
+        [
+          82011,
+          182011
+        ],
+        [
+          82012,
+          182012
+        ]
+      ]
+    },
+    "LVM": {
+      "n": 4,
+      "mean_V": 46.817317531823804,
+      "mean_R": 0.7312146731756333,
+      "mean_P_viol": 0.0,
+      "mean_offered_bytes": 7973.342500000001,
+      "seeds": [
+        [
+          82001,
+          182001
+        ],
+        [
+          82002,
+          182002
+        ],
+        [
+          82011,
+          182011
+        ],
+        [
+          82012,
+          182012
+        ]
+      ]
+    }
+  },
+  "value_gaps_vs_sparc": {
+    "VAS": {
+      "base_V": 38.03618296183004,
+      "sparc_V": 46.05708297081782,
+      "rel_gain": 0.21087552389357478
+    },
+    "LAS": {
+      "base_V": 36.299475662754844,
+      "sparc_V": 46.05708297081782,
+      "rel_gain": 0.26880849185584205
+    },
+    "VLRO": {
+      "base_V": 39.97852480813976,
+      "sparc_V": 46.05708297081782,
+      "rel_gain": 0.15204558426929357
+    },
+    "LVM": {
+      "base_V": 46.817317531823804,
+      "sparc_V": 46.05708297081782,
+      "rel_gain": -0.016238319516901453
+    }
+  },
+  "locked_targets": {
+    "matched_completed_value_gain": 0.15,
+    "P_viol_max": 0.02
+  },
+  "diagnostics": {
+    "D1_candidate_competition": {
+      "metric": {
+        "P_ge2_candidates": 0.9032258064516129,
+        "mean_n_candidates": 24.419354838709676,
+        "n_epochs": 31
+      },
+      "verdict": "PASS",
+      "note": "Epochs with |C_t|>=2 and mean candidate cardinality on VAS reference trajectories."
+    },
+    "D2_assignment_disagreement": {
+      "metric": {
+        "disagree_vs": {
+          "VAS": 0.8709677419354839,
+          "LAS": 0.8709677419354839,
+          "VLRO": 0.8709677419354839,
+          "LVM": 0.8387096774193549
+        },
+        "mean_vs_others": 0.8629032258064516,
+        "n_shadow_epochs": 31
+      },
+      "verdict": "PASS",
+      "note": "Identical-candidate shadow greedy sets: SPARC vs VAS/LAS/VLRO/LVM."
+    },
+    "D2b_materially_different_choices": {
+      "metric": {
+        "P_materially_diverse": 0.9032258064516129,
+        "n": 31
+      },
+      "verdict": "PASS",
+      "note": "Epochs with \u22652 materially different feasible schedules (not merely \u22652 candidates)."
+    },
+    "D3_governor_override": {
+      "metric": {
+        "intervene_rate_by_method": {
+          "VAS": 0.0,
+          "LAS": 0.0,
+          "VLRO": 0.0,
+          "SPARC": 0.0,
+          "LVM": 0.0
+        },
+        "fallback_value_share_by_method": {
+          "VAS": 0.0,
+          "LAS": 0.0,
+          "VLRO": 0.0,
+          "SPARC": 0.0,
+          "LVM": 0.0
+        }
+      },
+      "verdict": "PASS",
+      "note": "Per-algorithm governor override rate and completed-value share from fallback actions."
+    },
+    "D4_deadline_uncertainty": {
+      "metric": {
+        "n_tasks": 84,
+        "n_completed": 48,
+        "n_deadline_miss": 12,
+        "by_status": {
+          "incomplete": 24,
+          "completed": 48,
+          "deadline_miss": 12
+        },
+        "completion_rate": 0.5714285714285714,
+        "deadline_miss_rate": 0.14285714285714285
+      },
+      "verdict": "PASS",
+      "note": "Observational completion/miss among tasks; residual deadline outcome uncertainty."
+    },
+    "D5_STOP_opportunity": {
+      "metric": {
+        "observational_low_value_admits": "not_used_as_causal_evidence"
+      },
+      "verdict": "INCONCLUSIVE",
+      "note": "Protocol: low realized value alone does not prove STOP would help. Marginal admission effects require controlled paired replay."
+    },
+    "D6_helper_competition": {
+      "metric": {
+        "P_helper_busy": 0.25806451612903225,
+        "n_epochs": 31
+      },
+      "verdict": "PASS",
+      "note": "Epochs with non-idle projected helper queue / finish state among candidates."
+    },
+    "D7_sparc_vs_static_priority": {
+      "metric": {
+        "frac_assign_diff_vs_VAS": 0.8709677419354839,
+        "feature_ablation_sensitivity": {
+          "frac_changed_ablate_cbr": 0.0,
+          "frac_changed_ablate_deadline": 0.032258064516129004,
+          "frac_changed_ablate_helper_queue": 0.0,
+          "n_ablate_epochs": 31
+        },
+        "uses_radio_deadline_helper_channels": false
+      },
+      "verdict": "INCONCLUSIVE",
+      "note": "PASS requires both (i) assignments differ from VAS static ranking and (ii) ablating radio/deadline/helper features changes \u226510% of decisions."
+    }
+  },
+  "overall_verdict": "PASS",
+  "overall_note": "Substantial exploitable scheduling opportunity under common-governor validation replay; authorizes Stage 1 implementation proposal only."
+}

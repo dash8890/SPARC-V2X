@@ -1,0 +1,356 @@
+{
+  "label": "Table III Stage-5 (SPARC residual excluded)",
+  "n_seeds": 5,
+  "methods": {
+    "B1_VA": {
+      "mean_V": 32.461615922357296,
+      "mean_R": 0.4951068059089492,
+      "mean_P_viol": 0.0,
+      "mean_P_prr_fail": 0.0,
+      "mean_P_p95_fail": 0.0,
+      "mean_invalid_frac": 0.0,
+      "mean_prr": 0.9841469473976492,
+      "mean_p95": 23.562,
+      "mean_sum_offered_bytes": 707565.4,
+      "mean_epoch_offered_bytes": 7075.6539999999995,
+      "frac_compliant": 1.0,
+      "n": 5,
+      "admission": "common governor 175 kB + PRR/P95",
+      "tier": "governor_matched"
+    },
+    "B2_MF": {
+      "mean_V": 32.157773376911344,
+      "mean_R": 0.4908116403937739,
+      "mean_P_viol": 0.0,
+      "mean_P_prr_fail": 0.0,
+      "mean_P_p95_fail": 0.0,
+      "mean_invalid_frac": 0.0,
+      "mean_prr": 0.9845656209234839,
+      "mean_p95": 23.464000000000002,
+      "mean_sum_offered_bytes": 695526.2,
+      "mean_epoch_offered_bytes": 6955.262000000001,
+      "frac_compliant": 1.0,
+      "n": 5,
+      "admission": "common governor 175 kB + PRR/P95",
+      "tier": "governor_matched"
+    },
+    "B3_Direct": {
+      "mean_V": 37.97105657089449,
+      "mean_R": 0.5892801073945356,
+      "mean_P_viol": 0.0,
+      "mean_P_prr_fail": 0.0,
+      "mean_P_p95_fail": 0.0,
+      "mean_invalid_frac": 0.0,
+      "mean_prr": 0.9853140208132423,
+      "mean_p95": 21.612,
+      "mean_sum_offered_bytes": 630079.0,
+      "mean_epoch_offered_bytes": 6300.789999999999,
+      "frac_compliant": 1.0,
+      "n": 5,
+      "admission": "common governor 175 kB + PRR/P95",
+      "tier": "governor_matched"
+    },
+    "B4_Lagrangian": {
+      "mean_V": 42.67657849189164,
+      "mean_R": 0.6577846254834349,
+      "mean_P_viol": 0.0,
+      "mean_P_prr_fail": 0.0,
+      "mean_P_p95_fail": 0.0,
+      "mean_invalid_frac": 0.0,
+      "mean_prr": 0.9829457605267479,
+      "mean_p95": 24.887999999999998,
+      "mean_sum_offered_bytes": 791445.8,
+      "mean_epoch_offered_bytes": 7914.4580000000005,
+      "frac_compliant": 1.0,
+      "n": 5,
+      "admission": "unshielded; physical_byte_cap=500000; soft dual kappa=0.05",
+      "tier": "unshielded"
+    },
+    "B5_ITORA": {
+      "mean_V": 33.334620368759225,
+      "mean_R": 0.5061790069266878,
+      "mean_P_viol": 0.0,
+      "mean_P_prr_fail": 0.0,
+      "mean_P_p95_fail": 0.0,
+      "mean_invalid_frac": 0.0,
+      "mean_prr": 0.9845969638526091,
+      "mean_p95": 22.314,
+      "mean_sum_offered_bytes": 732121.0,
+      "mean_epoch_offered_bytes": 7321.209999999999,
+      "frac_compliant": 1.0,
+      "n": 5,
+      "admission": "gov=None (byte budget only)",
+      "tier": "unshielded"
+    }
+  },
+  "paired_contrasts_governor_matched": {
+    "direct_minus_va": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": 5.509440648537194,
+        "ci95_low": 1.1562117646657781,
+        "ci95_high": 10.64874228604991,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": 0.09417330148558645,
+        "ci95_low": 0.018860741006145244,
+        "ci95_high": 0.19110177140148582,
+        "n": 5
+      },
+      "wins": 4,
+      "ties": 1,
+      "losses": 0
+    },
+    "direct_minus_mf": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": 5.813283193983148,
+        "ci95_low": 1.2281348421568388,
+        "ci95_high": 11.242553054434854,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": 0.09846846700076171,
+        "ci95_low": 0.021129224824723524,
+        "ci95_high": 0.1975378706098694,
+        "n": 5
+      },
+      "wins": 4,
+      "ties": 0,
+      "losses": 1
+    },
+    "mf_minus_va": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": -0.3038425454459535,
+        "ci95_low": -2.795464230349892,
+        "ci95_high": 1.7928466261194345,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": -0.00429516551517527,
+        "ci95_low": -0.038397551580750235,
+        "ci95_high": 0.024697690654972227,
+        "n": 5
+      },
+      "wins": 2,
+      "ties": 2,
+      "losses": 1
+    }
+  },
+  "paired_contrasts_cross_admission": {
+    "b4_minus_direct": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": 4.7055219209971515,
+        "ci95_low": 2.347716296418615,
+        "ci95_high": 7.063327545575687,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": 0.06850451808889926,
+        "ci95_low": 0.038267976323983974,
+        "ci95_high": 0.10135827367668275,
+        "n": 5
+      },
+      "wins": 5,
+      "ties": 0,
+      "losses": 0
+    },
+    "itora_minus_direct": {
+      "seeds": [
+        93000,
+        93001,
+        93002,
+        93003,
+        93004
+      ],
+      "delta_V": {
+        "mean": -4.636436202135259,
+        "ci95_low": -11.574840986054033,
+        "ci95_high": 1.1645947447122638,
+        "n": 5
+      },
+      "delta_R": {
+        "mean": -0.0831011004678477,
+        "ci95_low": -0.2149369172357142,
+        "ci95_high": 0.014453544510096417,
+        "n": 5
+      },
+      "wins": 1,
+      "ties": 1,
+      "losses": 3
+    }
+  },
+  "strongest_governor_matched": "B3_Direct",
+  "excluded": [
+    "SPARC_A0_residual"
+  ],
+  "by_seed": [
+    {
+      "sim_seed": 93000,
+      "B1_VA": {
+        "V": 34.2899426402401,
+        "R": 0.4567919397494142,
+        "P_viol": 0.0
+      },
+      "B2_MF": {
+        "V": 37.27802035043916,
+        "R": 0.4965974835406142,
+        "P_viol": 0.0
+      },
+      "B3_Direct": {
+        "V": 35.22654720001306,
+        "R": 0.4692688755706705,
+        "P_viol": 0.0
+      },
+      "B4_Lagrangian": {
+        "V": 42.22902354968564,
+        "R": 0.5625520515845788,
+        "P_viol": 0.0
+      },
+      "B5_ITORA": {
+        "V": 34.2899426402401,
+        "R": 0.4567919397494142,
+        "P_viol": 0.0
+      }
+    },
+    {
+      "sim_seed": 93001,
+      "B1_VA": {
+        "V": 32.357463153328396,
+        "R": 0.47091439715923195,
+        "P_viol": 0.0
+      },
+      "B2_MF": {
+        "V": 32.357463153328396,
+        "R": 0.47091439715923195,
+        "P_viol": 0.0
+      },
+      "B3_Direct": {
+        "V": 36.26531285711137,
+        "R": 0.5277872947261892,
+        "P_viol": 0.0
+      },
+      "B4_Lagrangian": {
+        "V": 44.9110918466004,
+        "R": 0.6536136545219009,
+        "P_viol": 0.0
+      },
+      "B5_ITORA": {
+        "V": 39.17679971889203,
+        "R": 0.5701596239120584,
+        "P_viol": 0.0
+      }
+    },
+    {
+      "sim_seed": 93002,
+      "B1_VA": {
+        "V": 28.38916436031677,
+        "R": 0.4910187468409059,
+        "P_viol": 0.0
+      },
+      "B2_MF": {
+        "V": 28.38916436031677,
+        "R": 0.4910187468409059,
+        "P_viol": 0.0
+      },
+      "B3_Direct": {
+        "V": 35.94924266521894,
+        "R": 0.6217777973073975,
+        "P_viol": 0.0
+      },
+      "B4_Lagrangian": {
+        "V": 37.793468474042626,
+        "R": 0.6536755113100705,
+        "P_viol": 0.0
+      },
+      "B5_ITORA": {
+        "V": 28.38916436031677,
+        "R": 0.4910187468409059,
+        "P_viol": 0.0
+      }
+    },
+    {
+      "sim_seed": 93003,
+      "B1_VA": {
+        "V": 31.46391428840005,
+        "R": 0.5625886505963582,
+        "P_viol": 0.0
+      },
+      "B2_MF": {
+        "V": 31.691639208131544,
+        "R": 0.5666604724976192,
+        "P_viol": 0.0
+      },
+      "B3_Direct": {
+        "V": 46.60658496262792,
+        "R": 0.8333462741695853,
+        "P_viol": 0.0
+      },
+      "B4_Lagrangian": {
+        "V": 48.62158637007317,
+        "R": 0.8693753871519557,
+        "P_viol": 0.0
+      },
+      "B5_ITORA": {
+        "V": 29.00959995484609,
+        "R": 0.5187044289322255,
+        "P_viol": 0.0
+      }
+    },
+    {
+      "sim_seed": 93004,
+      "B1_VA": {
+        "V": 35.807595169501155,
+        "R": 0.4942202951988355,
+        "P_viol": 0.0
+      },
+      "B2_MF": {
+        "V": 31.072579812340837,
+        "R": 0.4288671019304981,
+        "P_viol": 0.0
+      },
+      "B3_Direct": {
+        "V": 35.807595169501155,
+        "R": 0.4942202951988355,
+        "P_viol": 0.0
+      },
+      "B4_Lagrangian": {
+        "V": 39.82772221905636,
+        "R": 0.5497065228486684,
+        "P_viol": 0.0
+      },
+      "B5_ITORA": {
+        "V": 35.807595169501155,
+        "R": 0.4942202951988355,
+        "P_viol": 0.0
+      }
+    }
+  ]
+}

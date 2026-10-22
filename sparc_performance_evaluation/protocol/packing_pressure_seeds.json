@@ -1,0 +1,32 @@
+{
+  "status": "PACKING_PRESSURE_PIVOT",
+  "problem": "density=35, tasks_per_source=4, deadline_x=1.0",
+  "forbidden_sim_seeds": [82001, 82002, 82011, 82012, 93000, 93001, 93002, 93003, 93004],
+  "excluded_prior_pools": {
+    "note": "Do not reuse historical train/RAO/C0 pools",
+    "ranges": ["72000-72095", "72100-72147", "72200-72299"]
+  },
+  "collection_pool": {
+    "sim_seed_rule": "72300 + i",
+    "task_seed_rule": "182300 + i"
+  },
+  "environment": {
+    "density": 35,
+    "tasks_per_source": 4,
+    "deadline_multiplier": 1.0,
+    "envelope_bytes": 175000,
+    "helper_cpu_lo": 2.0e8,
+    "helper_cpu_hi": 1.0e9,
+    "governor": "SafetyGovernor horizon_envelope_only",
+    "simulation_time": 12.0,
+    "controller_epochs": 100
+  },
+  "methods": ["LVM", "Direct", "POPL"],
+  "default_n_episodes": 8,
+  "pass_bars_predeclared": {
+    "mean_delta_best_vs_lvm": 1.0,
+    "frac_seeds_best_ge_lvm": 0.75,
+    "max_mean_P_viol": 0.02,
+    "note": "best = max(Direct, POPL) per-seed then mean; also report POPL-LVM and Direct-LVM separately. Bars fixed before collection."
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "status": "VALIDATION",
+  "n": 4,
+  "sim_seeds": [82001, 82002, 82011, 82012],
+  "task_seeds": [182001, 182002, 182011, 182012],
+  "partition": "see protocol/SEED_PARTITION.md",
+  "purpose": "Stage 0 diagnostic / checkpoint selection only — not sealed final-test",
+  "note": "Disjoint from training (72000+/182000+) and sealed final-test (93000+/193000+)"
+}

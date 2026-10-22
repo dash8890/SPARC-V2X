@@ -1,0 +1,28 @@
+[
+  {
+    "gate": "G1",
+    "n_audits": 12,
+    "has_radio_events": 1200,
+    "has_cbr": 1200,
+    "pass": true,
+    "note": "Native bridge audits expose CBR/radio_events; no analytic radio shortcut in logged path."
+  },
+  {
+    "gate": "G4",
+    "phantom_value_suspect": 0,
+    "delivery_without_offer": 20,
+    "checked_epochs": 1200,
+    "pass": true,
+    "status": "PASS_WITH_NOTE",
+    "note": "Observed 20 epochs with rx_delta>0 and offered_bytes==0 (consistent with delayed delivery of prior offers). TaskLayer G3 enforces deadline/commit parity; no phantom selection-without-delivery path identified."
+  },
+  {
+    "gate": "G8",
+    "valid_epochs": 1200,
+    "invalid_epochs": 0,
+    "prr_none_on_valid": 0,
+    "pass": true,
+    "invalid_frac": 0.0,
+    "note": "Valid epochs always carry PRR in bake-off; invalid windows counted separately."
+  }
+]

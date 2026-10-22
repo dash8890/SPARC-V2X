@@ -1,0 +1,11 @@
+{
+  "program": "SPARC",
+  "current_phase": "HQ_SPO_B5P_TRAIN_CONVERGE",
+  "authorized_now": true,
+  "user_lock": "User: deliver finished converged improved model that beats all — no babysitting",
+  "now": {
+    "script": "sparc_performance_evaluation/scripts/train_pb_crl_b5_prime.py",
+    "goal": "B5′ learning curve + beat panel B5; then PB-CRL if needed"
+  },
+  "updated": "2026-10-20-train-b5p-no-babysit"
+}

@@ -1,0 +1,9 @@
+scenario: manhattan
+x_number: 5
+y_number: 5
+grid_length: 200
+num_lanes: 2
+insertion_rate: 2.0
+duration_s: 60
+step_length_s: 0.1
+max_vehicles: 300

@@ -1,0 +1,49 @@
+{
+  "figure": "Fig.9",
+  "title": "SPARC-N vs SPARC-S across density",
+  "note": "At dens 35, SPARC-N and SPARC-S use the same sealed train@35 policy.",
+  "panels": {
+    "35": {
+      "SPARC-N": {
+        "R_value": 0.5892801073945356,
+        "P_viol": 0.0,
+        "n": 5,
+        "source": "catchup_gov_on_d35_direct"
+      },
+      "SPARC-S": {
+        "R_value": 0.5892801073945356,
+        "P_viol": 0.0,
+        "n": 5,
+        "source": "catchup_gov_on_d35_direct"
+      }
+    },
+    "50": {
+      "SPARC-N": {
+        "R_value": 0.3481690504954472,
+        "P_viol": 0.4,
+        "n": 5,
+        "source": "catchup_fig11a_nominal_direct_on_d50"
+      },
+      "SPARC-S": {
+        "R_value": 0.37654959506974295,
+        "P_viol": 0.4,
+        "n": 5,
+        "source": "catchup_fig11a_direct_d50_ft"
+      }
+    },
+    "100": {
+      "SPARC-N": {
+        "R_value": 0.30753568251450214,
+        "P_viol": 0.386,
+        "n": 5,
+        "source": "catchup_fig11a_nominal_direct_on_d100"
+      },
+      "SPARC-S": {
+        "R_value": 0.3139984689559294,
+        "P_viol": 0.392,
+        "n": 5,
+        "source": "catchup_fig11a_direct_d100_ft"
+      }
+    }
+  }
+}

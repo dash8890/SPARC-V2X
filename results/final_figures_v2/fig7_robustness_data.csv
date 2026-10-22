@@ -1,0 +1,29 @@
+panel,density,method,R_value
+Low computation load,50,Minimum-Finish,0.611
+Low computation load,100,Minimum-Finish,0.365
+Low computation load,150,Minimum-Finish,0.279
+Low computation load,200,Minimum-Finish,0.23
+Low computation load,50,SPARC-V2X,0.556
+Low computation load,100,SPARC-V2X,0.351
+Low computation load,150,SPARC-V2X,0.301
+Low computation load,200,SPARC-V2X,0.257
+Nominal computation load,50,Minimum-Finish,0.492
+Nominal computation load,100,Minimum-Finish,0.291
+Nominal computation load,150,Minimum-Finish,0.207
+Nominal computation load,200,Minimum-Finish,0.153
+Nominal computation load,50,SPARC-V2X,0.477
+Nominal computation load,100,SPARC-V2X,0.31
+Nominal computation load,150,SPARC-V2X,0.242
+Nominal computation load,200,SPARC-V2X,0.176
+High computation load,50,Minimum-Finish,0.442
+High computation load,100,Minimum-Finish,0.238
+High computation load,150,Minimum-Finish,0.146
+High computation load,200,Minimum-Finish,0.11
+High computation load,50,SPARC-V2X,0.372
+High computation load,100,SPARC-V2X,0.256
+High computation load,150,SPARC-V2X,0.191
+High computation load,200,SPARC-V2X,0.139
+Anchor-deviation rate,50,SPARC-V2X,0.37
+Anchor-deviation rate,100,SPARC-V2X,0.42000000000000004
+Anchor-deviation rate,150,SPARC-V2X,0.46499999999999997
+Anchor-deviation rate,200,SPARC-V2X,0.5449999999999999

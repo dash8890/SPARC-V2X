@@ -1,0 +1,12 @@
+CLOSED — Phase-3 / W-driven CA-PPO training path after Phase-2d FAIL (2026-10-19).
+
+Phase-2d offline W-greedy on held-out RAO pairs:
+  mean G_sel = 24.858 < mean G_Direct = 24.953 (Δ = -0.095)
+  mean vs POPL = -1.249
+  Spearman(W_P-W_D, ΔG) = -0.138
+
+Advantage-mode code is wired (gae | w_minus_v | blend) but must NOT be used for
+authorized Phase-3 training on this evidence.
+
+SPARC-V2X research goal unchanged. Dual-policy RAO selector remains CLOSED.
+Report: SPARC_MDP_PHASE2D_REPORT.md

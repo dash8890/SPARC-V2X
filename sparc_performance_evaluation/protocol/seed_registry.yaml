@@ -1,0 +1,48 @@
+# Frozen seed registry — SPARC-V2X performance evaluation
+# See SEED_PARTITION.md for the manuscript budget.
+
+registry_version: 2
+status: SEALED — train/validation/final-test disjoint; final-test n=5
+
+policy: |
+  Training, checkpoint-selection validation, and final-test seeds are disjoint.
+  Best-ΔVA checkpoint selection uses validation only.
+  Final-test seeds must never appear in training or checkpoint selection.
+  One training run per learned configuration; five paired final seeds per operating point.
+
+historical_training:
+  status: USED — never use as final-test
+  run_id: wilab_residual_ppo_96ep_va_relative
+  sim_seed_rule: "72000 + episode"
+  task_seed_rule: "182000 + episode"
+  episodes: 0..95
+  notes: Definitive SPARC-V2X residual PPO training trajectories (1 run).
+
+historical_validation_checkpoint_selection:
+  status: USED — never use as final-test
+  n: 4
+  sim_seeds: [82001, 82002, 82011, 82012]
+  task_seeds: [182001, 182002, 182011, 182012]
+  selection_metric: mean delta completed_value (residual - corrected VA)
+  selected_checkpoint_ref: checkpoints/wilab_residual_ppo_96ep_va_relative.pt
+  also_seen_in: results/wilab_bakeoff_residual_va_mf_best
+
+final_test:
+  status: SEALED
+  n_per_operating_point: 5
+  sim_seeds: [93000, 93001, 93002, 93003, 93004]
+  task_seeds: [193000, 193001, 193002, 193003, 193004]
+  seal_file: protocol/final_test_seeds.json
+  seal_sha256_16: 8bc8eab182600d15
+  sealed_at_utc: 2026-10-14T06:08:56.558124+00:00
+
+calibration:
+  status: REUSE_EXISTING
+  notes: No new calibration campaign required for package lock.
+
+prospective_independent_training_seeds:
+  status: NOT_IN_BASELINE_BUDGET
+  target_n: 1
+  notes: |
+    Manuscript baseline uses one training run per learned config.
+    Extra training seeds are optional sensitivity, not required for lock.

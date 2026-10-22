@@ -1,0 +1,17 @@
+CLOSED — RAO Stage-3 Phase-1 dual-policy (Direct↔POPL) causal selector mechanism.
+
+Date: 2026-10-19
+Overall: FAIL
+Decisive gate G4: FAIL
+  mean(G_sel - G_Direct) = 0.0  (not > 0)
+  mean(G_sel - G_POPL)   = -1.154 (not > 0)
+Selector matched always-Direct on held-out disagreeing pairs; no positive net realized
+completed-value advantage over both constituents.
+
+Action per authorization: close this mechanism. Do NOT start another corrective-tuning
+cycle, Phase-2 RAO adaptive-actor PPO, extra collection, or manuscript promotion on this
+selector path. SPARC-V2X research goal is unchanged; only this dual-policy selector
+mechanism is rejected.
+
+Artifacts: sparc_performance_evaluation/results/raw/rao_phase1/
+Report: sparc_performance_evaluation/reports/RAO_PHASE1_G1_G7_REPORT.md

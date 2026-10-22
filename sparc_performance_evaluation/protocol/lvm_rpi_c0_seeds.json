@@ -1,0 +1,27 @@
+{
+  "status": "LVM_RPI_C0",
+  "purpose": "Fresh consequentiality measurement vs LVM. Not for fitting deploy gates on locked val.",
+  "forbidden": {
+    "sim_seeds": [82001, 82002, 82011, 82012, 93000, 93001, 93002, 93003, 93004],
+    "also_excluded_prior_fit_pools": [72000, 72100],
+    "note": "Exclude any seed previously used for controller fitting; RAO pool 72100-72147 excluded; historical train 72000-72095 excluded."
+  },
+  "collection_pool": {
+    "sim_seed_rule": "72200 + i",
+    "task_seed_rule": "182200 + i",
+    "note": "Disjoint from RAO 72100+ and historical 72000+ and locked val/final-test."
+  },
+  "environment_nominal": {
+    "density": 35,
+    "envelope_bytes": 175000,
+    "deadline_multiplier": 1.0,
+    "tasks_per_source": 3,
+    "helper_cpu_lo": 2.0e8,
+    "helper_cpu_hi": 1.0e9,
+    "governor": "SafetyGovernor horizon_envelope_only",
+    "simulation_time": 12.0,
+    "controller_epochs": 100
+  },
+  "c0_batch_default_n_episodes": 8,
+  "pass_criterion": "Characterize distribution — no numeric % gain gate"
+}

@@ -1,0 +1,64 @@
+{
+  "label": "Table III final-test nominal density",
+  "seed_split": "final_test",
+  "n_seeds_complete": 5,
+  "methods": {
+    "minfinish": {
+      "mean_V_done": 32.157773376911344,
+      "mean_R_value": 0.4908116403937739,
+      "mean_P_viol": 0.0,
+      "mean_invalid_frac": 0.0,
+      "frac_compliant": 1.0,
+      "mean_offered_bytes": 6955.262000000001,
+      "n": 5
+    },
+    "residual": {
+      "mean_V_done": 35.810253029152946,
+      "mean_R_value": 0.5503752695286652,
+      "mean_P_viol": 0.0,
+      "mean_invalid_frac": 0.0,
+      "frac_compliant": 1.0,
+      "mean_offered_bytes": 6284.992,
+      "n": 5
+    },
+    "value_aware": {
+      "mean_V_done": 32.461615922357296,
+      "mean_R_value": 0.4951068059089492,
+      "mean_P_viol": 0.0,
+      "mean_invalid_frac": 0.0,
+      "frac_compliant": 1.0,
+      "mean_offered_bytes": 7075.6539999999995,
+      "n": 5
+    }
+  },
+  "paired": {
+    "sparc_minus_value_aware": {
+      "delta_R": {
+        "mean": 0.0552684636197161,
+        "ci95_low": 0.005807335480010545,
+        "ci95_high": 0.1261888933591835,
+        "n": 5
+      },
+      "delta_V": {
+        "mean": 3.3486371067956533,
+        "ci95_low": 0.39903355035866356,
+        "ci95_high": 7.240759849488887,
+        "n": 5
+      }
+    },
+    "sparc_minus_minfinish": {
+      "delta_R": {
+        "mean": 0.05956362913489137,
+        "ci95_low": -0.010114882036469475,
+        "ci95_high": 0.1368164388720944,
+        "n": 5
+      },
+      "delta_V": {
+        "mean": 3.652479652241607,
+        "ci95_low": -0.7961975337209595,
+        "ci95_high": 8.101156838204172,
+        "n": 5
+      }
+    }
+  }
+}

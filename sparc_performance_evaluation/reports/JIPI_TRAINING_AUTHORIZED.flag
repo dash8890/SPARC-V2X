@@ -1,0 +1,7 @@
+AUTHORIZED
+protocol: Stage-2 JIPI-SPARC bounded training
+date: 2026-10-18
+scope: one 96-episode PPO run; edit actor/critic only; frozen Direct; train-seed pool 72000+/182000+
+validation: one-shot locked seeds 82001,82002,82011,82012 after train-only checkpoint selection
+forbidden: architecture revision; HPO; extra training runs; final-test; manuscript promotion
+source: user Training Authorization Decision (APPROVED)

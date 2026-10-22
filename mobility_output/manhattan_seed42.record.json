@@ -1,0 +1,52 @@
+{
+  "netgenerate": [
+    "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\netgenerate",
+    "--grid",
+    "--grid.x-number",
+    "5",
+    "--grid.y-number",
+    "5",
+    "--grid.length",
+    "200",
+    "--default.lanenumber",
+    "2",
+    "--output-file",
+    "mobility_output\\manhattan_seed42.net.xml",
+    "--seed",
+    "42"
+  ],
+  "randomTrips": [
+    "python",
+    "C:\\Program Files (x86)\\Eclipse\\Sumo\\tools\\randomTrips.py",
+    "-n",
+    "mobility_output\\manhattan_seed42.net.xml",
+    "-o",
+    "mobility_output\\manhattan_seed42.trips.xml",
+    "-r",
+    "mobility_output\\manhattan_seed42.rou.xml",
+    "-p",
+    "0.5",
+    "-e",
+    "60",
+    "--seed",
+    "42",
+    "--max-distance",
+    "2000"
+  ],
+  "sumo": [
+    "C:\\Program Files (x86)\\Eclipse\\Sumo\\bin\\sumo",
+    "-n",
+    "mobility_output\\manhattan_seed42.net.xml",
+    "-r",
+    "mobility_output\\manhattan_seed42.rou.xml",
+    "--fcd-output",
+    "mobility_output\\manhattan_seed42.fcd.xml",
+    "--step-length",
+    "0.1",
+    "--seed",
+    "42",
+    "--no-step-log",
+    "--max-num-vehicles",
+    "300"
+  ]
+}

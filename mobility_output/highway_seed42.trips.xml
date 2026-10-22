@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-09-30 20:24:37.889127 by Eclipse SUMO randomTrips.py v1_27_1+0000-7717f2379d9
+<configuration>
+    <net-file value="mobility_output\highway_seed42.net.xml"/>
+    <output-trip-file value="mobility_output\highway_seed42.trips.xml"/>
+    <route-file value="mobility_output\highway_seed42.rou.xml"/>
+    <max-distance value="2000.0"/>
+    <end value="60.0"/>
+    <period value="0.6666666666666666"/>
+</configuration>
+-->
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+    <trip id="0" depart="0.00" from="G0F0" to="B0A0"/>
+    <trip id="1" depart="0.67" from="D0C0" to="C0D0"/>
+    <trip id="2" depart="1.33" from="G0H0" to="G0F0"/>
+    <trip id="3" depart="2.00" from="I0H0" to="B0C0"/>
+    <trip id="4" depart="2.67" from="E0D0" to="B0A0"/>
+    <trip id="5" depart="3.33" from="C0D0" to="F0E0"/>
+    <trip id="6" depart="4.00" from="A0B0" to="C0D0"/>
+    <trip id="7" depart="4.67" from="G0F0" to="F0E0"/>
+    <trip id="8" depart="5.33" from="C0D0" to="F0G0"/>
+    <trip id="9" depart="6.00" from="H0G0" to="B0A0"/>
+    <trip id="10" depart="6.67" from="H0G0" to="G0H0"/>
+    <trip id="11" depart="7.33" from="D0E0" to="C0B0"/>
+    <trip id="12" depart="8.00" from="J0I0" to="D0E0"/>
+    <trip id="13" depart="8.67" from="B0C0" to="B0C0"/>
+    <trip id="14" depart="9.33" from="H0I0" to="F0G0"/>
+    <trip id="15" depart="10.00" from="H0G0" to="G0H0"/>
+    <trip id="16" depart="10.67" from="F0E0" to="I0J0"/>
+    <trip id="17" depart="11.33" from="E0D0" to="F0E0"/>
+    <trip id="18" depart="12.00" from="H0I0" to="F0G0"/>
+    <trip id="19" depart="12.67" from="H0I0" to="F0G0"/>
+    <trip id="20" depart="13.33" from="G0H0" to="B0A0"/>
+    <trip id="21" depart="14.00" from="C0D0" to="D0C0"/>
+    <trip id="22" depart="14.67" from="B0C0" to="C0D0"/>
+    <trip id="23" depart="15.33" from="B0C0" to="D0C0"/>
+    <trip id="24" depart="16.00" from="G0F0" to="D0E0"/>
+    <trip id="25" depart="16.67" from="D0E0" to="C0D0"/>
+    <trip id="26" depart="17.33" from="D0C0" to="I0H0"/>
+    <trip id="27" depart="18.00" from="G0F0" to="F0G0"/>
+    <trip id="28" depart="18.67" from="C0B0" to="G0H0"/>
+    <trip id="29" depart="19.33" from="C0B0" to="E0D0"/>
+    <trip id="30" depart="20.00" from="J0I0" to="G0F0"/>
+    <trip id="31" depart="20.67" from="F0E0" to="G0F0"/>
+    <trip id="32" depart="21.33" from="H0I0" to="H0G0"/>
+    <trip id="33" depart="22.00" from="C0D0" to="B0A0"/>
+    <trip id="34" depart="22.67" from="D0E0" to="D0C0"/>
+    <trip id="35" depart="23.33" from="C0D0" to="I0J0"/>
+    <trip id="36" depart="24.00" from="I0H0" to="D0E0"/>
+    <trip id="37" depart="24.67" from="G0F0" to="E0D0"/>
+    <trip id="38" depart="25.33" from="I0H0" to="E0F0"/>
+    <trip id="39" depart="26.00" from="D0C0" to="C0D0"/>
+    <trip id="40" depart="26.67" from="F0E0" to="D0C0"/>
+    <trip id="41" depart="27.33" from="F0G0" to="I0H0"/>
+    <trip id="42" depart="28.00" from="E0D0" to="C0D0"/>
+    <trip id="43" depart="28.67" from="J0I0" to="F0E0"/>
+    <trip id="44" depart="29.33" from="B0C0" to="B0A0"/>
+    <trip id="45" depart="30.00" from="B0C0" to="G0F0"/>
+    <trip id="46" depart="30.67" from="H0G0" to="E0D0"/>
+    <trip id="47" depart="31.33" from="B0C0" to="E0D0"/>
+    <trip id="48" depart="32.00" from="J0I0" to="F0E0"/>
+    <trip id="49" depart="32.67" from="J0I0" to="H0I0"/>
+    <trip id="50" depart="33.33" from="A0B0" to="G0H0"/>
+    <trip id="51" depart="34.00" from="G0F0" to="F0E0"/>
+    <trip id="52" depart="34.67" from="D0C0" to="G0F0"/>
+    <trip id="53" depart="35.33" from="B0C0" to="E0D0"/>
+    <trip id="54" depart="36.00" from="E0F0" to="I0J0"/>
+    <trip id="55" depart="36.67" from="I0H0" to="D0C0"/>
+    <trip id="56" depart="37.33" from="F0E0" to="C0B0"/>
+    <trip id="57" depart="38.00" from="I0H0" to="H0I0"/>
+    <trip id="58" depart="38.67" from="D0C0" to="G0F0"/>
+    <trip id="59" depart="39.33" from="F0G0" to="C0B0"/>
+    <trip id="60" depart="40.00" from="H0G0" to="F0E0"/>
+    <trip id="61" depart="40.67" from="H0G0" to="F0E0"/>
+    <trip id="62" depart="41.33" from="A0B0" to="D0E0"/>
+    <trip id="63" depart="42.00" from="A0B0" to="I0H0"/>
+    <trip id="64" depart="42.67" from="I0H0" to="H0I0"/>
+    <trip id="65" depart="43.33" from="D0C0" to="B0A0"/>
+    <trip id="66" depart="44.00" from="I0H0" to="I0J0"/>
+    <trip id="67" depart="44.67" from="B0C0" to="E0F0"/>
+    <trip id="68" depart="45.33" from="B0C0" to="H0G0"/>
+    <trip id="69" depart="46.00" from="H0G0" to="C0B0"/>
+    <trip id="70" depart="46.67" from="E0F0" to="F0E0"/>
+    <trip id="71" depart="47.33" from="D0C0" to="H0I0"/>
+    <trip id="72" depart="48.00" from="E0D0" to="C0D0"/>
+    <trip id="73" depart="48.67" from="F0E0" to="G0H0"/>
+    <trip id="74" depart="49.33" from="C0D0" to="D0C0"/>
+    <trip id="75" depart="50.00" from="J0I0" to="G0F0"/>
+    <trip id="76" depart="50.67" from="E0F0" to="F0E0"/>
+    <trip id="77" depart="51.33" from="B0C0" to="C0D0"/>
+    <trip id="78" depart="52.00" from="D0E0" to="F0G0"/>
+    <trip id="79" depart="52.67" from="C0D0" to="C0D0"/>
+    <trip id="80" depart="53.33" from="B0C0" to="G0F0"/>
+    <trip id="81" depart="54.00" from="C0D0" to="I0H0"/>
+    <trip id="82" depart="54.67" from="H0I0" to="B0C0"/>
+    <trip id="83" depart="55.33" from="C0D0" to="G0F0"/>
+    <trip id="84" depart="56.00" from="C0D0" to="C0B0"/>
+    <trip id="85" depart="56.67" from="I0H0" to="F0G0"/>
+    <trip id="86" depart="57.33" from="E0F0" to="H0G0"/>
+    <trip id="87" depart="58.00" from="H0G0" to="C0D0"/>
+    <trip id="88" depart="58.67" from="B0C0" to="E0D0"/>
+    <trip id="89" depart="59.33" from="E0D0" to="E0F0"/>
+    <trip id="90" depart="60.00" from="J0I0" to="B0C0"/>
+</routes>

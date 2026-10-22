@@ -1,0 +1,47 @@
+{
+  "label": "Table III (campaign merge, nominal d=35)",
+  "methods": {
+    "SPARC-V2X": {
+      "mean_V": 35.810253029152946,
+      "mean_R": 0.5503752695286652,
+      "mean_P_viol": 0.0,
+      "frac_compliant": 1.0,
+      "n": 5
+    },
+    "B1 VA": {
+      "mean_V": 32.461615922357296,
+      "mean_R": 0.4951068059089492,
+      "mean_P_viol": 0.0,
+      "frac_compliant": 1.0,
+      "n": 5
+    },
+    "B2 MF": {
+      "mean_V": 32.157773376911344,
+      "mean_R": 0.4908116403937739,
+      "mean_P_viol": 0.0,
+      "frac_compliant": 1.0,
+      "n": 5
+    },
+    "B3 Direct": {
+      "mean_V": 37.97105657089449,
+      "mean_R": 0.5892801073945356,
+      "mean_P_viol": 0.0,
+      "frac_compliant": 1.0,
+      "n": 5
+    },
+    "B4 Lagrangian": {
+      "mean_V": 42.67657849189164,
+      "mean_R": 0.6577846254834349,
+      "mean_P_viol": 0.0,
+      "frac_compliant": 1.0,
+      "n": 5
+    },
+    "B5 ITORA-inspired": {
+      "mean_V": 33.334620368759225,
+      "mean_R": 0.5061790069266878,
+      "mean_P_viol": 0.0,
+      "frac_compliant": 1.0,
+      "n": 5
+    }
+  }
+}

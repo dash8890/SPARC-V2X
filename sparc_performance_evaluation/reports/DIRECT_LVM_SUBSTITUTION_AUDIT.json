@@ -1,0 +1,520 @@
+{
+  "status": "offline_matched_state_substitution_audit",
+  "stage1_closed": true,
+  "sparc_reference": "prior_Direct_PPO",
+  "final_test_sealed": true,
+  "training_authorized": false,
+  "architecture_change_authorized": false,
+  "implementation_authorized": false,
+  "controlled_replay_recommended": true,
+  "controlled_replay_authorized": false,
+  "summary": {
+    "n_lvm_only_cases": 2,
+    "n_feasible_add_or_sub": 1,
+    "n_addition": 0,
+    "n_substitution": 1,
+    "n_promising_preserve_direct_wins": 1,
+    "n_promising_but_displaces_direct_win": 1,
+    "omission_cause_counts": {
+      "already_in_direct_pack": 1,
+      "byte_envelope_requires_displacement": 1
+    }
+  },
+  "replay_candidates": [
+    {
+      "sim_seed": 82002,
+      "matched_direct_epoch": 33,
+      "mode": "helper_swap",
+      "task_id": 19,
+      "from_helper": 2,
+      "to_helper": 0,
+      "slack_from": 3.1136848816706504,
+      "slack_to": 9.531066218707082,
+      "task_value": 2.4539326207635574,
+      "preserves_direct_task_set": true,
+      "preserves_direct_completed": true,
+      "analytic_net": 2.4539326207635574
+    }
+  ],
+  "conditional_displace_candidates": [
+    {
+      "sim_seed": 82012,
+      "matched_direct_epoch": 33,
+      "mode": "substitution",
+      "add_task": 1,
+      "add_helper": 2,
+      "displace_task": 13,
+      "displace_value": 1.4822216247549505,
+      "analytic_net": 2.255888773114965,
+      "task_value": 3.7381103978699155,
+      "preserves_direct_completed": false,
+      "note": "Offline net positive only if displaced Direct completion is valued less than added task; replay required."
+    }
+  ],
+  "deadline_helper_opportunities": [
+    {
+      "sim_seed": 82002,
+      "task_id": 19,
+      "task_value": 2.4539326207635574,
+      "alt_exists": true,
+      "chosen": {
+        "helper_id": 2,
+        "finish_ms": 87.97307689151205,
+        "deadline_ms": 91.0867617731827,
+        "slack_ms": 3.1136848816706504,
+        "analytic_score": 0.02789413183927536,
+        "was_chosen": true
+      },
+      "best_alt": {
+        "helper_id": 0,
+        "finish_ms": 81.55569555447562,
+        "deadline_ms": 91.0867617731827,
+        "slack_ms": 9.531066218707082,
+        "analytic_score": 0.030089041218161583,
+        "was_chosen": false
+      }
+    }
+  ],
+  "per_seed": [
+    {
+      "sim_seed": 82001,
+      "V_direct": 39.84117105749592,
+      "V_lvm": 38.26120708084946,
+      "dV": 1.5799639766464608,
+      "direct_only_task_ids": [
+        0
+      ],
+      "direct_only_value": 1.5799639766464622,
+      "lvm_only_task_ids": [],
+      "lvm_only_value": 0,
+      "cases": [],
+      "promising_offline": []
+    },
+    {
+      "sim_seed": 82002,
+      "V_direct": 49.95321222307849,
+      "V_lvm": 50.83600404587898,
+      "dV": -0.8827918228004918,
+      "direct_only_task_ids": [
+        1
+      ],
+      "direct_only_value": 1.5711407979630776,
+      "lvm_only_task_ids": [
+        19
+      ],
+      "lvm_only_value": 2.4539326207635574,
+      "cases": [
+        {
+          "task_id": 19,
+          "task_value": 2.4539326207635574,
+          "pathway": "deadline_miss",
+          "direct_status": "deadline_miss",
+          "lvm_status": "completed",
+          "matched_direct_epoch": 33,
+          "lvm_assign_epoch": 33,
+          "lvm_helper": 2,
+          "direct_pack": [
+            {
+              "task_id": 4,
+              "helper_id": 6,
+              "source_id": 1,
+              "payload_bytes": 37017
+            },
+            {
+              "task_id": 7,
+              "helper_id": 7,
+              "source_id": 2,
+              "payload_bytes": 44521
+            },
+            {
+              "task_id": 1,
+              "helper_id": 2,
+              "source_id": 0,
+              "payload_bytes": 14183
+            },
+            {
+              "task_id": 19,
+              "helper_id": 2,
+              "source_id": 6,
+              "payload_bytes": 27218
+            }
+          ],
+          "direct_pack_task_ids": [
+            4,
+            7,
+            1,
+            19
+          ],
+          "epochs_task_in_direct_candidates": [
+            33
+          ],
+          "substitution": {
+            "feasible": false,
+            "reason": "already_in_direct_pack",
+            "mode": null,
+            "target": {
+              "task_id": 19,
+              "helper_id": 2,
+              "source_id": 6,
+              "payload_bytes": 27218,
+              "finish_ms": 87.97307689151205,
+              "deadline_ms": 91.0867617731827,
+              "analytic_score": 0.02789413183927536,
+              "slack_ms": 3.1136848816706504
+            }
+          },
+          "helper_audit": {
+            "task_id": 19,
+            "n_helper_options": 2,
+            "chosen": {
+              "helper_id": 2,
+              "finish_ms": 87.97307689151205,
+              "deadline_ms": 91.0867617731827,
+              "slack_ms": 3.1136848816706504,
+              "analytic_score": 0.02789413183927536,
+              "was_chosen": true
+            },
+            "best_slack_alternative": {
+              "helper_id": 0,
+              "finish_ms": 81.55569555447562,
+              "deadline_ms": 91.0867617731827,
+              "slack_ms": 9.531066218707082,
+              "analytic_score": 0.030089041218161583,
+              "was_chosen": false
+            },
+            "all_options": [
+              {
+                "helper_id": 0,
+                "finish_ms": 81.55569555447562,
+                "deadline_ms": 91.0867617731827,
+                "slack_ms": 9.531066218707082,
+                "analytic_score": 0.030089041218161583,
+                "was_chosen": false
+              },
+              {
+                "helper_id": 2,
+                "finish_ms": 87.97307689151205,
+                "deadline_ms": 91.0867617731827,
+                "slack_ms": 3.1136848816706504,
+                "analytic_score": 0.02789413183927536,
+                "was_chosen": true
+              }
+            ],
+            "alternative_with_more_slack_exists": true
+          },
+          "helper_swap": {
+            "feasible": true,
+            "mode": "helper_swap",
+            "task_id": 19,
+            "from_helper": 2,
+            "to_helper": 0,
+            "slack_from": 3.1136848816706504,
+            "slack_to": 9.531066218707082,
+            "displaces_direct_completed_task": false,
+            "preserves_direct_task_set": true,
+            "analytic_note": "Does not change which tasks are admitted; only helper binding. Realized deadline success requires closed-loop replay."
+          }
+        }
+      ],
+      "promising_offline": [
+        {
+          "task_id": 19,
+          "task_value": 2.4539326207635574,
+          "pathway": "deadline_miss",
+          "direct_status": "deadline_miss",
+          "lvm_status": "completed",
+          "matched_direct_epoch": 33,
+          "lvm_assign_epoch": 33,
+          "lvm_helper": 2,
+          "direct_pack": [
+            {
+              "task_id": 4,
+              "helper_id": 6,
+              "source_id": 1,
+              "payload_bytes": 37017
+            },
+            {
+              "task_id": 7,
+              "helper_id": 7,
+              "source_id": 2,
+              "payload_bytes": 44521
+            },
+            {
+              "task_id": 1,
+              "helper_id": 2,
+              "source_id": 0,
+              "payload_bytes": 14183
+            },
+            {
+              "task_id": 19,
+              "helper_id": 2,
+              "source_id": 6,
+              "payload_bytes": 27218
+            }
+          ],
+          "direct_pack_task_ids": [
+            4,
+            7,
+            1,
+            19
+          ],
+          "epochs_task_in_direct_candidates": [
+            33
+          ],
+          "substitution": {
+            "feasible": false,
+            "reason": "already_in_direct_pack",
+            "mode": null,
+            "target": {
+              "task_id": 19,
+              "helper_id": 2,
+              "source_id": 6,
+              "payload_bytes": 27218,
+              "finish_ms": 87.97307689151205,
+              "deadline_ms": 91.0867617731827,
+              "analytic_score": 0.02789413183927536,
+              "slack_ms": 3.1136848816706504
+            }
+          },
+          "helper_audit": {
+            "task_id": 19,
+            "n_helper_options": 2,
+            "chosen": {
+              "helper_id": 2,
+              "finish_ms": 87.97307689151205,
+              "deadline_ms": 91.0867617731827,
+              "slack_ms": 3.1136848816706504,
+              "analytic_score": 0.02789413183927536,
+              "was_chosen": true
+            },
+            "best_slack_alternative": {
+              "helper_id": 0,
+              "finish_ms": 81.55569555447562,
+              "deadline_ms": 91.0867617731827,
+              "slack_ms": 9.531066218707082,
+              "analytic_score": 0.030089041218161583,
+              "was_chosen": false
+            },
+            "all_options": [
+              {
+                "helper_id": 0,
+                "finish_ms": 81.55569555447562,
+                "deadline_ms": 91.0867617731827,
+                "slack_ms": 9.531066218707082,
+                "analytic_score": 0.030089041218161583,
+                "was_chosen": false
+              },
+              {
+                "helper_id": 2,
+                "finish_ms": 87.97307689151205,
+                "deadline_ms": 91.0867617731827,
+                "slack_ms": 3.1136848816706504,
+                "analytic_score": 0.02789413183927536,
+                "was_chosen": true
+              }
+            ],
+            "alternative_with_more_slack_exists": true
+          },
+          "helper_swap": {
+            "feasible": true,
+            "mode": "helper_swap",
+            "task_id": 19,
+            "from_helper": 2,
+            "to_helper": 0,
+            "slack_from": 3.1136848816706504,
+            "slack_to": 9.531066218707082,
+            "displaces_direct_completed_task": false,
+            "preserves_direct_task_set": true,
+            "analytic_note": "Does not change which tasks are admitted; only helper binding. Realized deadline success requires closed-loop replay."
+          },
+          "promising_kind": "helper_swap"
+        }
+      ]
+    },
+    {
+      "sim_seed": 82011,
+      "V_direct": 58.69359071540481,
+      "V_lvm": 58.69359071540481,
+      "dV": 0.0,
+      "direct_only_task_ids": [],
+      "direct_only_value": 0,
+      "lvm_only_task_ids": [],
+      "lvm_only_value": 0,
+      "cases": [],
+      "promising_offline": []
+    },
+    {
+      "sim_seed": 82012,
+      "V_direct": 35.74035788729206,
+      "V_lvm": 39.47846828516198,
+      "dV": -3.7381103978699173,
+      "direct_only_task_ids": [],
+      "direct_only_value": 0,
+      "lvm_only_task_ids": [
+        1
+      ],
+      "lvm_only_value": 3.7381103978699155,
+      "cases": [
+        {
+          "task_id": 1,
+          "task_value": 3.7381103978699155,
+          "pathway": "never_assigned_by_direct",
+          "direct_status": "incomplete",
+          "lvm_status": "completed",
+          "matched_direct_epoch": 33,
+          "lvm_assign_epoch": 33,
+          "lvm_helper": 2,
+          "direct_pack": [
+            {
+              "task_id": 13,
+              "helper_id": 0,
+              "source_id": 4,
+              "payload_bytes": 20716
+            },
+            {
+              "task_id": 19,
+              "helper_id": 11,
+              "source_id": 6,
+              "payload_bytes": 59754
+            },
+            {
+              "task_id": 16,
+              "helper_id": 4,
+              "source_id": 5,
+              "payload_bytes": 46333
+            },
+            {
+              "task_id": 4,
+              "helper_id": 5,
+              "source_id": 1,
+              "payload_bytes": 34662
+            }
+          ],
+          "direct_pack_task_ids": [
+            13,
+            19,
+            16,
+            4
+          ],
+          "epochs_task_in_direct_candidates": [
+            33
+          ],
+          "substitution": {
+            "feasible": true,
+            "mode": "substitution",
+            "target": {
+              "task_id": 1,
+              "helper_id": 2,
+              "source_id": 0,
+              "payload_bytes": 21211,
+              "finish_ms": 77.23719348350971,
+              "deadline_ms": 80.22998431200912,
+              "analytic_score": 0.04839780181646347,
+              "slack_ms": 2.992790828499409
+            },
+            "displaced": {
+              "task_id": 13,
+              "helper_id": 0,
+              "source_id": 4,
+              "payload_bytes": 20716,
+              "task_value": 1.4822216247549505,
+              "direct_completed": true
+            },
+            "bytes_before": 161465,
+            "bytes_after": 161960,
+            "analytic_value_gain_if_target_completes": 3.7381103978699155,
+            "analytic_value_loss_if_displace_completes": 1.4822216247549505,
+            "net_analytic_if_target_completes_displace_status_quo": 2.255888773114965,
+            "displaces_direct_completed_task": true,
+            "omission_cause": "byte_envelope_requires_displacement"
+          }
+        }
+      ],
+      "promising_offline": [
+        {
+          "task_id": 1,
+          "task_value": 3.7381103978699155,
+          "pathway": "never_assigned_by_direct",
+          "direct_status": "incomplete",
+          "lvm_status": "completed",
+          "matched_direct_epoch": 33,
+          "lvm_assign_epoch": 33,
+          "lvm_helper": 2,
+          "direct_pack": [
+            {
+              "task_id": 13,
+              "helper_id": 0,
+              "source_id": 4,
+              "payload_bytes": 20716
+            },
+            {
+              "task_id": 19,
+              "helper_id": 11,
+              "source_id": 6,
+              "payload_bytes": 59754
+            },
+            {
+              "task_id": 16,
+              "helper_id": 4,
+              "source_id": 5,
+              "payload_bytes": 46333
+            },
+            {
+              "task_id": 4,
+              "helper_id": 5,
+              "source_id": 1,
+              "payload_bytes": 34662
+            }
+          ],
+          "direct_pack_task_ids": [
+            13,
+            19,
+            16,
+            4
+          ],
+          "epochs_task_in_direct_candidates": [
+            33
+          ],
+          "substitution": {
+            "feasible": true,
+            "mode": "substitution",
+            "target": {
+              "task_id": 1,
+              "helper_id": 2,
+              "source_id": 0,
+              "payload_bytes": 21211,
+              "finish_ms": 77.23719348350971,
+              "deadline_ms": 80.22998431200912,
+              "analytic_score": 0.04839780181646347,
+              "slack_ms": 2.992790828499409
+            },
+            "displaced": {
+              "task_id": 13,
+              "helper_id": 0,
+              "source_id": 4,
+              "payload_bytes": 20716,
+              "task_value": 1.4822216247549505,
+              "direct_completed": true
+            },
+            "bytes_before": 161465,
+            "bytes_after": 161960,
+            "analytic_value_gain_if_target_completes": 3.7381103978699155,
+            "analytic_value_loss_if_displace_completes": 1.4822216247549505,
+            "net_analytic_if_target_completes_displace_status_quo": 2.255888773114965,
+            "displaces_direct_completed_task": true,
+            "omission_cause": "byte_envelope_requires_displacement"
+          },
+          "promising_kind": "substitution_displaces_win",
+          "promising_but_displaces_direct_win": true
+        }
+      ]
+    }
+  ],
+  "interpretation": {
+    "coverage": "LVM-only tasks that appear in Direct's candidate set at a matched epoch can often be added or substituted under the 175 kB / uniqueness rules \u2014 omission is frequently ranking/score choice, not hard infeasibility.",
+    "replacement_cost": "Prefer additions or displacements of Direct-incomplete tasks. Displacing Direct-completed tasks risks erasing the 0.79/seed Direct-only floor.",
+    "deadline_quality": "For Direct deadline-miss / LVM-complete cases, inspect whether a higher-slack helper existed in the same Direct candidate set.",
+    "caveat": "Analytic nets assume the substituted task would complete and the displaced task's completion status stays as in the Direct trace. Closed-loop replay with matched randomness is required before claiming realized \u0394V."
+  },
+  "next_authorization_boundary": "Offline audit complete. Controlled validation replay of listed replay_candidates requires explicit approval. No training / STOP / architecture / final-test."
+}

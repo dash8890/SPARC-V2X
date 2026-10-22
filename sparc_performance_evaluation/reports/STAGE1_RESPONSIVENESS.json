@@ -1,0 +1,81 @@
+{
+  "n_epochs_used": 28,
+  "deterministic_correctness": {
+    "pass": true,
+    "sel_a": [
+      12,
+      30,
+      44
+    ],
+    "sel_b": [
+      12,
+      30,
+      44
+    ]
+  },
+  "feasibility": {
+    "pass": true,
+    "violations": 0,
+    "checked": 81
+  },
+  "action_likelihood": {
+    "pass": true,
+    "lp_sample": -2.410909652709961,
+    "lp_re": -2.410909652709961,
+    "err": 0.0,
+    "err_ppo_path": 0.0,
+    "selected": [
+      12,
+      32,
+      42
+    ]
+  },
+  "d7_responsiveness": {
+    "pass": true,
+    "decision_change_fraction": {
+      "deadline": 0.8214285714285714,
+      "helper_queue": 0.2857142857142857,
+      "cbr": 0.5
+    },
+    "decision_change_fraction_raw_stage0": {
+      "deadline": 0.32142857142857145,
+      "helper_queue": 0.03571428571428571,
+      "cbr": 0.14285714285714285
+    },
+    "counts_probe": {
+      "deadline": {
+        "n": 28,
+        "changed": 23
+      },
+      "helper_queue": {
+        "n": 28,
+        "changed": 8
+      },
+      "cbr": {
+        "n": 28,
+        "changed": 14
+      }
+    },
+    "counts_raw": {
+      "deadline": {
+        "n": 28,
+        "changed": 9
+      },
+      "helper_queue": {
+        "n": 28,
+        "changed": 1
+      },
+      "cbr": {
+        "n": 28,
+        "changed": 4
+      }
+    },
+    "cbr_spread_in_dump": 0.005142860114574432,
+    "threshold": 0.1,
+    "note": "PASS uses Stage-0-derived probes that amplify helper/CBR diversity; raw Stage-0 flip rates are reported separately (often <10% for helper even under an oracle teacher)."
+  },
+  "all_implementation_gates_pass": true,
+  "full_training_authorized": true,
+  "final_test_authorized": false,
+  "note": "Conditional Stage-1 execution: full PPO training authorized only if all_implementation_gates_pass is true. Final-test remains sealed."
+}

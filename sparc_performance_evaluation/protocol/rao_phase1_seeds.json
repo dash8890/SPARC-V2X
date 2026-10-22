@@ -1,0 +1,38 @@
+{
+  "status": "RAO_PHASE1_DEVELOPMENT",
+  "purpose": "Training-only Direct-vs-POPL regime-selection feasibility (Stage 3 Phase 1). Not for fitting on locked val; not final-test.",
+  "forbidden_for_fitting": {
+    "sim_seeds": [82001, 82002, 82011, 82012],
+    "task_seeds": [182001, 182002, 182011, 182012],
+    "reason": "Repeatedly examined locked validation panel — overfitting risk"
+  },
+  "forbidden_final_test": {
+    "sim_seeds": [93000, 93001, 93002, 93003, 93004],
+    "task_seeds": [193000, 193001, 193002, 193003, 193004],
+    "reason": "Sealed final-test — no access under this specification"
+  },
+  "pair_collection_pool": {
+    "sim_seed_rule": "72100 + i",
+    "task_seed_rule": "182100 + i",
+    "note": "Disjoint from historical Direct/POPL train episodes 72000–72063 (and 72000–72095). Uses unused train-adjacent IDs.",
+    "n_episodes_max_authorized_when_collection_approved": 48,
+    "n_forks_per_episode": 1,
+    "fork_policy": "first opportunity epoch with n_candidates>0, else epoch 0"
+  },
+  "selector_fit_split": {
+    "fit_indices": "0..31 (inclusive) of collected pairs",
+    "heldout_dev_indices": "32..47 (inclusive) of collected pairs",
+    "note": "Held-out is within Phase-1 development pool only — still not locked val"
+  },
+  "environment_nominal": {
+    "density": 35,
+    "envelope_bytes": 175000,
+    "deadline_multiplier": 1.0,
+    "tasks_per_source": 3,
+    "helper_cpu_lo": 2.0e8,
+    "helper_cpu_hi": 1.0e9,
+    "governor": "SafetyGovernor horizon_envelope_only",
+    "simulation_time": 12.0,
+    "controller_epochs": 100
+  }
+}

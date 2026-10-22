@@ -1,0 +1,366 @@
+{
+  "status": "jipi_conditional_pass_verification",
+  "verdict": "PASS",
+  "training_authorized": false,
+  "final_test_authorized": false,
+  "n_pass": 3,
+  "n_fail": 0,
+  "results": [
+    {
+      "id": "C_queue_accounting",
+      "status": "PASS",
+      "added_task_value": 3.7381103978699155,
+      "displaced_task_value": 1.4822216247549505,
+      "nominal_delta": 2.255888773114965,
+      "C_queue": 0.0,
+      "C_pack": 0.0,
+      "C_external": 0.0,
+      "n_external_risk_tasks": 0,
+      "legacy_bug_C_queue_equals_added": false,
+      "incorrectly_counts_incoming": false,
+      "helper9_C_queue_still_positive": true,
+      "helper9_C_queue": 2.646857184400823,
+      "detail": "Fixed: proposed-pack tasks excluded from external queue risk. C_queue=0.0000 (was incorrectly 3.738=added). helper9 C_queue=2.6469."
+    },
+    {
+      "id": "T12_complete_controller_timing",
+      "status": "PASS",
+      "budget_ms": 10.0,
+      "n_samples": 41,
+      "all_loads": {
+        "max_ms": 7.440699730068445,
+        "p95_ms": 6.382400169968605,
+        "p99_ms": 7.440699730068445
+      },
+      "production_pruned": {
+        "max_ms": 7.440699730068445,
+        "p95_ms": 6.382400169968605,
+        "p99_ms": 7.440699730068445
+      },
+      "unpruned_high_max_ms": 8.43589985743165,
+      "headroom_ms_at_prod_max": 2.559300269931555,
+      "samples": [
+        {
+          "tag": "rep_182001",
+          "epoch": 0,
+          "ms": 4.762700293213129,
+          "ms_worst_rep": 5.572300404310226,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182001",
+          "epoch": 33,
+          "ms": 2.9377001337707043,
+          "ms_worst_rep": 3.104700241237879,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182001",
+          "epoch": 66,
+          "ms": 5.963600240647793,
+          "ms_worst_rep": 6.1737000942230225,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182002",
+          "epoch": 0,
+          "ms": 4.833799786865711,
+          "ms_worst_rep": 6.329800002276897,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182002",
+          "epoch": 33,
+          "ms": 4.3748002499341965,
+          "ms_worst_rep": 4.61919978260994,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182002",
+          "epoch": 66,
+          "ms": 5.494500044733286,
+          "ms_worst_rep": 7.416900247335434,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182011",
+          "epoch": 0,
+          "ms": 4.904000088572502,
+          "ms_worst_rep": 5.58699993416667,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182011",
+          "epoch": 33,
+          "ms": 6.174600217491388,
+          "ms_worst_rep": 7.16349994763732,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182011",
+          "epoch": 66,
+          "ms": 5.029600113630295,
+          "ms_worst_rep": 5.488199647516012,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182012",
+          "epoch": 0,
+          "ms": 4.649000242352486,
+          "ms_worst_rep": 4.90549998357892,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182012",
+          "epoch": 33,
+          "ms": 4.530299920588732,
+          "ms_worst_rep": 5.884699989110231,
+          "load": "representative"
+        },
+        {
+          "tag": "rep_182012",
+          "epoch": 66,
+          "ms": 4.529300145804882,
+          "ms_worst_rep": 4.7161998227238655,
+          "load": "representative"
+        },
+        {
+          "tag": "high_91001",
+          "epoch": 0,
+          "ms": 7.440699730068445,
+          "ms_worst_rep": 8.349900133907795,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91001",
+          "epoch": 20,
+          "ms": 4.32169996201992,
+          "ms_worst_rep": 4.712599795311689,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91001",
+          "epoch": 40,
+          "ms": 5.916600115597248,
+          "ms_worst_rep": 6.063899956643581,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91001",
+          "epoch": 60,
+          "ms": 5.571700166910887,
+          "ms_worst_rep": 5.798300262540579,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91001",
+          "epoch": 80,
+          "ms": 2.9925997368991375,
+          "ms_worst_rep": 3.1403996981680393,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91002",
+          "epoch": 0,
+          "ms": 4.785199649631977,
+          "ms_worst_rep": 5.287900101393461,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91002",
+          "epoch": 20,
+          "ms": 4.600699990987778,
+          "ms_worst_rep": 5.091500002890825,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91002",
+          "epoch": 40,
+          "ms": 4.414899740368128,
+          "ms_worst_rep": 5.354300141334534,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91002",
+          "epoch": 60,
+          "ms": 4.807399585843086,
+          "ms_worst_rep": 5.427700001746416,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91002",
+          "epoch": 80,
+          "ms": 6.3864002004265785,
+          "ms_worst_rep": 6.877200212329626,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91003",
+          "epoch": 0,
+          "ms": 4.8076999373734,
+          "ms_worst_rep": 6.590699777007103,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91003",
+          "epoch": 20,
+          "ms": 5.581799894571304,
+          "ms_worst_rep": 5.848799832165241,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91003",
+          "epoch": 40,
+          "ms": 5.426899995654821,
+          "ms_worst_rep": 6.1983997002244,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91003",
+          "epoch": 60,
+          "ms": 4.552199970930815,
+          "ms_worst_rep": 5.080800037831068,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91003",
+          "epoch": 80,
+          "ms": 4.692099988460541,
+          "ms_worst_rep": 5.8295996859669685,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91004",
+          "epoch": 0,
+          "ms": 4.4700996950268745,
+          "ms_worst_rep": 4.594800062477589,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91004",
+          "epoch": 20,
+          "ms": 5.169000010937452,
+          "ms_worst_rep": 6.195300258696079,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91004",
+          "epoch": 40,
+          "ms": 5.35729993134737,
+          "ms_worst_rep": 10.408100206404924,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91004",
+          "epoch": 60,
+          "ms": 6.382400169968605,
+          "ms_worst_rep": 7.698199711740017,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91004",
+          "epoch": 80,
+          "ms": 4.786800127476454,
+          "ms_worst_rep": 4.924499895423651,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91005",
+          "epoch": 0,
+          "ms": 5.45669998973608,
+          "ms_worst_rep": 6.0258000157773495,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91005",
+          "epoch": 20,
+          "ms": 5.282099824398756,
+          "ms_worst_rep": 6.29619974642992,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91005",
+          "epoch": 40,
+          "ms": 5.458999890834093,
+          "ms_worst_rep": 5.927700083702803,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91005",
+          "epoch": 60,
+          "ms": 4.560000263154507,
+          "ms_worst_rep": 5.3981002420187,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "high_91005",
+          "epoch": 80,
+          "ms": 5.983300041407347,
+          "ms_worst_rep": 6.240400020033121,
+          "load": "high_candidate"
+        },
+        {
+          "tag": "unpruned_92001",
+          "epoch": 0,
+          "ms": 8.43589985743165,
+          "load": "unpruned_high"
+        },
+        {
+          "tag": "unpruned_92001",
+          "epoch": 33,
+          "ms": 1.4998996630311012,
+          "load": "unpruned_high"
+        },
+        {
+          "tag": "unpruned_92002",
+          "epoch": 0,
+          "ms": 7.658099755644798,
+          "load": "unpruned_high"
+        },
+        {
+          "tag": "unpruned_92002",
+          "epoch": 33,
+          "ms": 1.441899687051773,
+          "load": "unpruned_high"
+        }
+      ],
+      "detail": "production max=7.441ms p95=6.382 p99=7.441; unpruned_high max=8.436ms"
+    },
+    {
+      "id": "T11_D_keep_equivalence",
+      "status": "PASS",
+      "sim_seed": 82002,
+      "task_seed": 182002,
+      "V_direct_rerun": 49.95321222307849,
+      "V_jipi_keep": 49.95321222307849,
+      "V_frozen_ref": 49.95321222307849,
+      "dV_jipi_minus_direct": 0.0,
+      "dV_direct_rerun_minus_frozen": 0.0,
+      "first_assignment_diff_epoch": null,
+      "completed_ids_match": true,
+      "status_mismatch_task_ids": [],
+      "P_viol_direct": 0.0,
+      "P_viol_jipi": 0.0,
+      "n_epochs_direct": 100,
+      "n_epochs_jipi": 100,
+      "wall_direct_s": 31.69256591796875,
+      "wall_jipi_s": 30.69628381729126,
+      "artifacts": {
+        "direct": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\sparc_performance_evaluation\\results\\raw\\jipi_conditional_pass_verification\\runs_keep\\direct\\episode_0001",
+        "jipi_keep": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\sparc_performance_evaluation\\results\\raw\\jipi_conditional_pass_verification\\runs_keep\\jipi_keep\\episode_0001",
+        "frozen_ref": "C:\\Users\\dash\\.codex\\worktrees\\b2cd\\5GProject3.0\\sparc_performance_evaluation\\results\\raw\\stage0_val_sparc_direct\\runs\\episode_0002"
+      },
+      "detail": "PASS: JIPI force_keep matched Direct re-run assignments/V/deadlines/safety"
+    }
+  ],
+  "decision_table": {
+    "offline_feasibility": "PASS (prior)",
+    "known_cases": "PASS (prior; C_queue accounting re-verified here)",
+    "closed_loop_keep_equivalence": "PASS",
+    "complete_controller_timing": "PASS",
+    "queue_cost_accounting": "PASS",
+    "full_ppo_training": "NOT_AUTHORIZED",
+    "final_test": "PROHIBITED"
+  },
+  "wall_seconds": 63.98352861404419
+}

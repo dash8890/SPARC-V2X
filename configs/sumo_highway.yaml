@@ -1,0 +1,9 @@
+scenario: highway
+x_number: 8
+y_number: 2
+grid_length: 200
+num_lanes: 3
+insertion_rate: 2.0
+duration_s: 60
+step_length_s: 0.1
+max_vehicles: 300

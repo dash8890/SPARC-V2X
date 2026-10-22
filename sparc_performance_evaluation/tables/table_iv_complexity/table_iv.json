@@ -1,0 +1,27 @@
+{
+  "B1_VA": {
+    "trainable": 0,
+    "admission": "common governor"
+  },
+  "B2_MF": {
+    "trainable": 0,
+    "admission": "common governor"
+  },
+  "B3_Direct": {
+    "trainable": 2307,
+    "admission": "common governor"
+  },
+  "B4_Lagrangian": {
+    "trainable": 2307,
+    "admission": "unshielded; physical_byte_cap=500000; dual ascent"
+  },
+  "B5_ITORA_inspired": {
+    "trainable": 0,
+    "admission": "byte cap only; no SPARC PRR/P95 governor",
+    "audit": "protocol/b5_itora_mapping_audit.md"
+  },
+  "SPARC_A0": {
+    "trainable": 2307,
+    "admission": "common governor"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "label": "Table IV \u2014 complexity (partial)",
+  "sparc_actor_critic_parameters": 1538,
+  "training_episodes_historical": 96,
+  "ppo_updates_historical": 24,
+  "baselines": {
+    "B1_value_aware": {
+      "trainable_parameters": 0,
+      "admission": "common governor"
+    },
+    "B2_minfinish": {
+      "trainable_parameters": 0,
+      "admission": "common governor"
+    },
+    "B3_direct_ppo": {
+      "trainable_parameters": 1538,
+      "status": "PENDING_TRAIN"
+    },
+    "B4_lagrangian": {
+      "status": "NOT_IMPLEMENTED"
+    },
+    "B5_itora_inspired": {
+      "status": "BLOCKED_PENDING_PAPER_MAPPING_AUDIT"
+    }
+  },
+  "inference_latency": "PENDING_E7",
+  "simulator_seconds": "PENDING_FROM_RUN_LOGS"
+}
