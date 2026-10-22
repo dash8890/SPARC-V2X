@@ -197,9 +197,29 @@ def main():
     lam_L_test = 0.01
     policy_mixed = copy.deepcopy(policy_base)
     optimizer_mixed = torch.optim.Adam(policy_mixed.parameters(), lr=2e-3)
-    loss_mixed = total_loss_r + lam_L_test * total_loss_c
+
+    total_loss_mixed = torch.tensor(0.0, device=device)
+    for s in steps_pure_r:
+        obs = s["sp_obs"]
+        zw = torch.tensor([s["z_w"]], dtype=torch.float32, device=device)
+        zb = torch.tensor([s["z_b"]], dtype=torch.float32, device=device)
+        logp, ent = policy_mixed.evaluate_actions(
+            obs["task_t"].to(device), obs["hlp_t"].to(device),
+            obs["radio_t"].to(device), obs["budget_t"].to(device), zw, zb
+        )
+        old_logp = torch.tensor(s["old_logp"], dtype=torch.float32, device=device)
+        adv_r = torch.tensor(s["adv"], dtype=torch.float32, device=device)
+        ret_c = torch.tensor(s["ret_c"], dtype=torch.float32, device=device)
+        ratio = torch.exp(logp - old_logp)
+        surr1 = ratio * adv_r
+        surr2 = torch.clamp(ratio, 0.8, 1.2) * adv_r
+        surr_u = -torch.min(surr1, surr2).squeeze() - 0.01 * ent.squeeze()
+        surr_c = ratio.squeeze() * ret_c
+        total_loss_mixed += (surr_u + lam_L_test * surr_c)
+
+    total_loss_mixed = total_loss_mixed / len(steps_pure_r)
     optimizer_mixed.zero_grad()
-    loss_mixed.backward()
+    total_loss_mixed.backward()
 
     optimizer_r.step()
     optimizer_mixed.step()
