@@ -288,6 +288,7 @@ def score_and_match(
     beta_throttle: float,
     b_max: int = 175000,
     unique_sources: bool = True,
+    unique_helpers: bool = True,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Deterministic Priority Matching Algorithm (Algorithm 1 in specification).
 
@@ -332,6 +333,8 @@ def score_and_match(
 
         if unique_sources and sid in used_sources:
             continue
+        if unique_helpers and hid in used_helpers:
+            continue
         if total_bytes + b > b_limit:
             continue
 
@@ -339,7 +342,8 @@ def score_and_match(
         scores_kept.append(float(s))
         if unique_sources:
             used_sources.add(sid)
-        used_helpers.add(hid)
+        if unique_helpers:
+            used_helpers.add(hid)
         total_bytes += b
 
     meta = {
