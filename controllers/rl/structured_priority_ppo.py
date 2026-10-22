@@ -81,6 +81,8 @@ def build_sp_steps(
                 "z_b": float(z_b),
                 "old_logp": old_logp,
                 "adv": mixed,
+                "adv_r": float(a_r),
+                "adv_c": float(a_c),
                 "ret_r": float(tr),
                 "ret_c": float(tc),
             })
@@ -197,6 +199,8 @@ def structured_priority_ppo_update(
             approx_kls.append(float(np.mean(kl_accum)))
 
     costs_all = [float(x) for tr in traces for x in episode_violation_costs(tr)]
+    adv_r_all = [s["adv_r"] for s in steps if "adv_r" in s]
+    adv_c_all = [s["adv_c"] for s in steps if "adv_c" in s]
     return {
         "actor_loss": float(np.mean(actor_losses)) if actor_losses else 0.0,
         "value_loss": float(np.mean(value_losses)) if value_losses else 0.0,
@@ -204,4 +208,6 @@ def structured_priority_ppo_update(
         "approx_kl": float(np.mean(approx_kls)) if approx_kls else 0.0,
         "grad_norm": float(np.mean(grad_norms)) if grad_norms else 0.0,
         "mean_epoch_violation_rate": float(np.mean(costs_all)) if costs_all else 0.0,
+        "mean_adv_r": float(np.mean(adv_r_all)) if adv_r_all else 0.0,
+        "mean_adv_c": float(np.mean(adv_c_all)) if adv_c_all else 0.0,
     }

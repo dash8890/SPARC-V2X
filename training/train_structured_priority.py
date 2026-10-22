@@ -181,7 +181,7 @@ def train(args):
         tasks = []
         for i in range(args.eps_per_round):
             eid += 1
-            s = 73200 + rnd * 2 + i
+            s = 73200 + rnd * args.eps_per_round + i
             t_seed = 191000 + rnd * 100 + i
             tasks.append((policy, eid, s, t_seed, runs_dir, args.sim_time, args.density, args.tasks_per_source, True, False))
 
@@ -198,10 +198,14 @@ def train(args):
         train_vs = [r[0] for r in ep_results]
         traces = [prepare_trace(r[3]) for r in ep_results if r[3]]
 
-        # Decision experience metrics
+        # Decision experience & queue metrics
         informative_steps = 0
         active_states = 0
         distinct_matchings = set()
+        executed_w_list = []
+        executed_beta_list = []
+        helper_queues = []
+
         for tr in traces:
             for item in tr:
                 cands_cnt = item.get("n_candidates", 0)
@@ -213,6 +217,13 @@ def train(args):
                     distinct_matchings.add(assn)
                 if sp_obs is not None:
                     informative_steps += 1
+                    if "weights" in item:
+                        executed_w_list.append(item["weights"])
+                    if "beta_throttle" in item:
+                        executed_beta_list.append(float(item["beta_throttle"]))
+                    if "hlp_t" in sp_obs:
+                        q_vals = sp_obs["hlp_t"][0, :, 1].tolist()
+                        helper_queues.extend(q_vals)
 
         # PPO update
         stats = structured_priority_ppo_update(
@@ -224,10 +235,19 @@ def train(args):
         lam_L = dual_ascent(lam_L, mean_cost, cost_limit=ALPHA, lr_dual=args.lr_dual)
 
         round_el = time.perf_counter() - round_t0
-        cur_w = [float(f"{x:.3f}") for x in (torch.sigmoid(policy.head_w.bias) * policy.w_max).detach().cpu().numpy()]
-        cur_beta = float(torch.sigmoid(policy.head_beta.bias).detach().cpu().item())
+        cur_w_unbiased = policy.base_z_w + policy.scale_w * torch.tanh(policy.head_w.bias)
+        cur_b_unbiased = policy.base_z_beta + policy.scale_beta * torch.tanh(policy.head_beta.bias.squeeze(-1))
+        cur_w = [float(f"{x:.3f}") for x in (torch.sigmoid(cur_w_unbiased) * policy.w_max).detach().cpu().numpy()]
+        cur_beta = float(torch.sigmoid(cur_b_unbiased).detach().cpu().item())
+
+        mean_q = float(np.mean(helper_queues)) if helper_queues else 0.0
+        max_q = float(np.max(helper_queues)) if helper_queues else 0.0
+        adv_r_m = float(stats.get("mean_adv_r", 0.0))
+        adv_c_m = float(stats.get("mean_adv_c", 0.0))
+
         print(f"  Round {rnd+1} complete in {round_el:.1f}s | Mean Train V = {np.mean(train_vs):.2f} | Mean Cost = {mean_cost:.4f} | New lam_L = {lam_L:.4f}")
         print(f"  Decision Experience: Active States = {active_states} | Informative Transitions = {informative_steps} | Distinct Matchings = {len(distinct_matchings)}")
+        print(f"  Queue Backlog: Mean = {mean_q:.4f} | Max = {max_q:.4f} | Adv_R = {adv_r_m:+.4f} | Adv_C = {adv_c_m:+.4f}")
         print(f"  Policy State: Priority Weights w = {cur_w} | Throttle beta = {cur_beta:.3f}")
         if stats:
             print(f"  PPO Stats: Actor Loss = {stats['actor_loss']:.4f} | Value Loss = {stats['value_loss']:.4f} | Cost Loss = {stats['cost_loss']:.4f} | Grad Norm = {stats.get('grad_norm', 0.0):.4f} | KL = {stats['approx_kl']:.4f}")
@@ -251,6 +271,10 @@ def train(args):
                 "active_states": active_states,
                 "informative_steps": informative_steps,
                 "distinct_matchings": len(distinct_matchings),
+                "mean_queue": mean_q,
+                "max_queue": max_q,
+                "mean_adv_r": adv_r_m,
+                "mean_adv_c": adv_c_m,
                 "val_mean_v": val_v,
                 "val_mean_p_viol": val_pv,
                 "val_feasible_fraction": val_safe,
@@ -303,8 +327,8 @@ def train(args):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--rounds", type=int, default=4, help="Number of training rounds")
-    ap.add_argument("--eps-per-round", type=int, default=2, help="Episodes per round")
+    ap.add_argument("--rounds", type=int, default=10, help="Number of training rounds")
+    ap.add_argument("--eps-per-round", type=int, default=5, help="Episodes per round")
     ap.add_argument("--eval-every", type=int, default=1, help="Evaluate every N rounds")
     ap.add_argument("--lr", type=float, default=2e-3, help="Learning rate")
     ap.add_argument("--lr-dual", type=float, default=0.01, help="Dual ascent learning rate")
@@ -312,7 +336,7 @@ def main():
     ap.add_argument("--sim-time", type=float, default=12.0, help="Simulation duration (s)")
     ap.add_argument("--density", type=int, default=15, help="Vehicle density")
     ap.add_argument("--tasks-per-source", type=int, default=12, help="Tasks per source")
-    ap.add_argument("--workers", type=int, default=2, help="Parallel rollout workers")
+    ap.add_argument("--workers", type=int, default=4, help="Parallel rollout workers")
     args = ap.parse_args()
     train(args)
 

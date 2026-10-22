@@ -79,11 +79,16 @@ class StructuredPriorityPolicy(nn.Module):
         budget_dim: int = 3,
         hidden: int = 128,
         w_max: float = 5.0,
-        init_log_std_w: float = 0.0,
-        init_log_std_beta: float = 0.0,
+        init_log_std_w: Optional[Sequence[float] | float] = None,
+        init_log_std_beta: Optional[float] = None,
+        scale_w: float = 3.0,
+        scale_beta: float = 1.5,
     ):
         super().__init__()
         self.w_max = float(w_max)
+        self.scale_w = float(scale_w)
+        self.scale_beta = float(scale_beta)
+
         self.task_enc = DeepSetsTaskEncoder(in_dim=task_in_dim, hidden_dim=64)
         self.helper_enc = HelperFleetEncoder(in_dim=helper_in_dim, hidden_dim=32)
         self.radio_gru = nn.GRU(input_size=radio_hist_dim, hidden_size=64, batch_first=True)
@@ -98,15 +103,38 @@ class StructuredPriorityPolicy(nn.Module):
             nn.Tanh(),
         )
 
-        # Action heads:
-        # 1. Four priority weights: w_v, w_q, w_o, w_r in [0, w_max]
+        # Baseline anchors: w_ref = [2.5, 1.887, 1.887, 1.887], beta_ref = 0.881
+        # Pre-sigmoid logit equivalents: sigmoid(0.0)*5 = 2.5; sigmoid(-0.5)*5 = 1.887; sigmoid(2.0) = 0.881
+        self.register_buffer("base_z_w", torch.tensor([0.0, -0.5, -0.5, -0.5], dtype=torch.float32))
+        self.register_buffer("base_z_beta", torch.tensor(2.0, dtype=torch.float32))
+
+        # Action heads output bounded residual offsets in logit space:
+        # delta_z_w = scale_w * tanh(head_w(trunk))
+        # delta_z_beta = scale_beta * tanh(head_beta(trunk))
         self.head_w = nn.Linear(hidden, 4)
-        # 2. Volume throttle beta in [0, 1]
         self.head_beta = nn.Linear(hidden, 1)
 
-        # Learnable log-std parameters for PPO exploration
-        self.log_std_w = nn.Parameter(torch.full((4,), float(init_log_std_w)))
-        self.log_std_beta = nn.Parameter(torch.tensor(float(init_log_std_beta)))
+        # Component-specific exploration standard deviations:
+        # sigma = (sigma_v=0.2, sigma_q=0.8, sigma_o=0.8, sigma_r=0.2, sigma_beta=0.2)
+        # Prioritizes informative exploration of latency and helper-occupancy tradeoffs
+        # while keeping restrained exploration on utility ranking and budget throttle.
+        if init_log_std_w is None:
+            log_std_w_tensor = torch.tensor(
+                [math.log(0.2), math.log(0.8), math.log(0.8), math.log(0.2)],
+                dtype=torch.float32,
+            )
+        elif isinstance(init_log_std_w, (list, tuple, torch.Tensor)):
+            log_std_w_tensor = torch.as_tensor(init_log_std_w, dtype=torch.float32)
+        else:
+            log_std_w_tensor = torch.full((4,), float(init_log_std_w), dtype=torch.float32)
+
+        if init_log_std_beta is None:
+            log_std_beta_val = math.log(0.2)
+        else:
+            log_std_beta_val = float(init_log_std_beta)
+
+        self.log_std_w = nn.Parameter(log_std_w_tensor)
+        self.log_std_beta = nn.Parameter(torch.tensor(log_std_beta_val, dtype=torch.float32))
 
         # Twin critics
         self.v_r_head = nn.Sequential(nn.Linear(hidden, 64), nn.Tanh(), nn.Linear(64, 1))
@@ -115,15 +143,12 @@ class StructuredPriorityPolicy(nn.Module):
         self._init_defaults()
 
     def _init_defaults(self):
-        # Default unbiased start: w_v=1.0, w_q=0.5, w_o=0.5, w_r=0.5, beta=0.9
+        # Initialize residual heads to strictly 0.0 offset so initial deterministic policy
+        # reproduces documented baseline B4 configuration exactly.
         nn.init.zeros_(self.head_w.weight)
-        nn.init.constant_(self.head_w.bias[0], 0.0)    # sigmoid(0.0) * 5.0 = 2.5
-        nn.init.constant_(self.head_w.bias[1], -0.5)   # sigmoid(-0.5) * 5.0 = 1.88
-        nn.init.constant_(self.head_w.bias[2], -0.5)   # sigmoid(-0.5) * 5.0 = 1.88
-        nn.init.constant_(self.head_w.bias[3], -0.5)   # sigmoid(-0.5) * 5.0 = 1.88
-
+        nn.init.zeros_(self.head_w.bias)
         nn.init.zeros_(self.head_beta.weight)
-        nn.init.constant_(self.head_beta.bias, 2.0)    # sigmoid(2.0) = 0.88
+        nn.init.zeros_(self.head_beta.bias)
 
     def forward_trunk(
         self,
@@ -157,8 +182,11 @@ class StructuredPriorityPolicy(nn.Module):
         deterministic: bool = False,
     ):
         trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
-        mu_w = self.head_w(trunk_h)                     # (batch, 4)
-        mu_b = self.head_beta(trunk_h).squeeze(-1)      # (batch,)
+        delta_w = self.scale_w * torch.tanh(self.head_w(trunk_h))
+        delta_b = self.scale_beta * torch.tanh(self.head_beta(trunk_h).squeeze(-1))
+
+        mu_w = self.base_z_w.to(trunk_h.device) + delta_w
+        mu_b = self.base_z_beta.to(trunk_h.device) + delta_b
 
         std_w = self.log_std_w.exp().expand_as(mu_w)
         std_b = self.log_std_beta.exp().expand_as(mu_b)
@@ -188,8 +216,11 @@ class StructuredPriorityPolicy(nn.Module):
         z_b: torch.Tensor,
     ):
         trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
-        mu_w = self.head_w(trunk_h)
-        mu_b = self.head_beta(trunk_h).squeeze(-1)
+        delta_w = self.scale_w * torch.tanh(self.head_w(trunk_h))
+        delta_b = self.scale_beta * torch.tanh(self.head_beta(trunk_h).squeeze(-1))
+
+        mu_w = self.base_z_w.to(trunk_h.device) + delta_w
+        mu_b = self.base_z_beta.to(trunk_h.device) + delta_b
 
         dist_w = Normal(mu_w, self.log_std_w.exp().expand_as(mu_w))
         dist_b = Normal(mu_b, self.log_std_beta.exp().expand_as(mu_b))
@@ -278,7 +309,7 @@ class StructuredPriorityPolicy(nn.Module):
                     sp_obs,
                 )
 
-        return [3.5, 2.5, 3.0, 0.5], 0.95, torch.tensor(0.0), [0.0, 0.0, 0.0, 0.0], 0.0, None
+        return [2.5, 1.8877, 1.8877, 1.8877], 0.8808, torch.tensor(0.0), [0.0, -0.5, -0.5, -0.5], 2.0, None
 
 
 
