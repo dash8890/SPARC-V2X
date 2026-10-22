@@ -23,6 +23,12 @@ from typing import List, Tuple
 import numpy as np
 import torch
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "experiments" / "wilab_closed_loop"))
@@ -219,7 +225,7 @@ def train(args):
             delta_init = val_v - 58.89
             for r in val_rows:
                 print(f"      Seed {r['seed']}: V_done = {r['V_done']:.2f} | P_viol = {r['P_viol']*100:.2f}% | PRR = {r['mean_prr']:.4f}")
-            print(f"  >>> Validation Mean V: {val_v:.2f} (ΔB4: {delta_b4:+.2f}, ΔInit: {delta_init:+.2f}) | PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
+            print(f"  >>> Validation Mean V: {val_v:.2f} (d_B4: {delta_b4:+.2f}, d_Init: {delta_init:+.2f}) | PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
 
             round_entry = {
                 "round": rnd + 1,
