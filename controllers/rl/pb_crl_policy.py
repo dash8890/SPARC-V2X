@@ -196,7 +196,6 @@ class PredictiveRiskAccount:
         """Predictive risk deduction before violation occurs."""
         self.m_rem = max(0.0, self.m_rem - q_plus_exec)
         self.history_q_plus.append(q_plus_exec)
-        self.current_epoch += 1
 
     def note_window_outcome(self, violated: bool):
         """Feedback after window outcome z_t is observed."""
@@ -243,6 +242,11 @@ class PBCRLPolicy(nn.Module):
         self.head_beta = nn.Linear(hidden, 1)
         self.head_g = nn.Linear(hidden, 1)
 
+        # Learnable log-std parameters for PPO exploration (log_std_lam=0.18 -> std=1.20 for exploratory coverage)
+        self.log_std_lam = nn.Parameter(torch.tensor(0.18))
+        self.log_std_beta = nn.Parameter(torch.tensor(-1.0))
+        self.log_std_g = nn.Parameter(torch.tensor(-1.0))
+
         # Twin critics
         self.v_r_head = nn.Sequential(nn.Linear(hidden, 64), nn.Tanh(), nn.Linear(64, 1))
         self.v_c_head = nn.Sequential(nn.Linear(hidden, 64), nn.Tanh(), nn.Linear(64, 1))
@@ -251,12 +255,12 @@ class PBCRLPolicy(nn.Module):
         # Pacing gain head g_t zero-initialized -> sigmoid(0)*1.5 + 0.5 = 1.0 (exact neutral pacing initially)
         nn.init.zeros_(self.head_g.weight)
         nn.init.zeros_(self.head_g.bias)
-        # Lambda head bias set to empirical density
+        # Lambda head bias set to -3.20 -> sigmoid(-3.20)*50 ≈ 1.95 (guarantees >=95% B4 parity while std=1.20 reaches pruning band)
         nn.init.zeros_(self.head_lam.weight)
-        nn.init.constant_(self.head_lam.bias, -2.5)  # sigmoid(-2.5)*50 ≈ 3.79
+        nn.init.constant_(self.head_lam.bias, -3.20)
         # Beta head bias set to high admission initially
         nn.init.zeros_(self.head_beta.weight)
-        nn.init.constant_(self.head_beta.bias, 4.0)   # sigmoid(4.0) ≈ 0.98
+        nn.init.constant_(self.head_beta.bias, 3.0)   # sigmoid(3.0) ≈ 0.95
 
     def forward_trunk(
         self,
@@ -295,6 +299,88 @@ class PBCRLPolicy(nn.Module):
         g_t = torch.sigmoid(z_g) * 1.5 + 0.5
         return lam, beta_prop, g_t
 
+    def forward_actions(
+        self,
+        task_feats: torch.Tensor,
+        helper_feats: torch.Tensor,
+        radio_hist: torch.Tensor,
+        budget_block: torch.Tensor,
+        *,
+        deterministic: bool = False,
+    ):
+        trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
+        mu_l = self.head_lam(trunk_h).squeeze(-1)
+        mu_b = self.head_beta(trunk_h).squeeze(-1)
+        mu_g = self.head_g(trunk_h).squeeze(-1)
+
+        std_l = self.log_std_lam.exp().expand_as(mu_l)
+        std_b = self.log_std_beta.exp().expand_as(mu_b)
+        std_g = self.log_std_g.exp().expand_as(mu_g)
+
+        dist_l = Normal(mu_l, std_l)
+        dist_b = Normal(mu_b, std_b)
+        dist_g = Normal(mu_g, std_g)
+
+        if deterministic:
+            z_l, z_b, z_g = mu_l, mu_b, mu_g
+        else:
+            z_l, z_b, z_g = dist_l.rsample(), dist_b.rsample(), dist_g.rsample()
+
+        lam = torch.sigmoid(z_l) * self.lam_max
+        beta_prop = torch.sigmoid(z_b)
+        g_t = torch.sigmoid(z_g) * 1.5 + 0.5
+
+        logp = dist_l.log_prob(z_l) + dist_b.log_prob(z_b) + dist_g.log_prob(z_g)
+        ent = dist_l.entropy() + dist_b.entropy() + dist_g.entropy()
+        return lam, beta_prop, g_t, logp, z_l, z_b, z_g, ent
+
+    def evaluate_actions(
+        self,
+        task_feats: torch.Tensor,
+        helper_feats: torch.Tensor,
+        radio_hist: torch.Tensor,
+        budget_block: torch.Tensor,
+        z_l: float,
+        z_b: float,
+        z_g: float,
+    ):
+        trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
+        mu_l = self.head_lam(trunk_h).squeeze(-1)
+        mu_b = self.head_beta(trunk_h).squeeze(-1)
+        mu_g = self.head_g(trunk_h).squeeze(-1)
+
+        dist_l = Normal(mu_l, self.log_std_lam.exp().expand_as(mu_l))
+        dist_b = Normal(mu_b, self.log_std_beta.exp().expand_as(mu_b))
+        dist_g = Normal(mu_g, self.log_std_g.exp().expand_as(mu_g))
+
+        zl = torch.as_tensor(z_l, dtype=torch.float32, device=mu_l.device).detach()
+        zb = torch.as_tensor(z_b, dtype=torch.float32, device=mu_b.device).detach()
+        zg = torch.as_tensor(z_g, dtype=torch.float32, device=mu_g.device).detach()
+
+        logp = dist_l.log_prob(zl) + dist_b.log_prob(zb) + dist_g.log_prob(zg)
+        ent = dist_l.entropy() + dist_b.entropy() + dist_g.entropy()
+        return logp, ent
+
+    def value(
+        self,
+        task_feats: torch.Tensor,
+        helper_feats: torch.Tensor,
+        radio_hist: torch.Tensor,
+        budget_block: torch.Tensor,
+    ) -> torch.Tensor:
+        trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
+        return self.v_r_head(trunk_h).squeeze(-1)
+
+    def cost_value(
+        self,
+        task_feats: torch.Tensor,
+        helper_feats: torch.Tensor,
+        radio_hist: torch.Tensor,
+        budget_block: torch.Tensor,
+    ) -> torch.Tensor:
+        trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
+        return self.v_c_head(trunk_h).squeeze(-1)
+
     def critics(self, trunk_h: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         v_r = self.v_r_head(trunk_h).squeeze(-1)
         v_c = self.v_c_head(trunk_h).squeeze(-1)
@@ -323,6 +409,19 @@ class PBCRLCoreAgent:
         self.c2_Z = 0
         self.c2_forced_zero_epochs = 0
         self.shield_enabled = bool(shield_enabled)
+        self._last_obs: Optional[Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]] = None
+
+    def value(self, *args, **kwargs) -> torch.Tensor:
+        if self._last_obs is not None:
+            with torch.no_grad():
+                return self.policy.value(*self._last_obs)
+        return torch.tensor(0.0)
+
+    def cost_value(self, *args, **kwargs) -> torch.Tensor:
+        if self._last_obs is not None:
+            with torch.no_grad():
+                return self.policy.cost_value(*self._last_obs)
+        return torch.tensor(0.0)
 
     def reset_c2(self, K: Optional[int] = None):
         self.c2_K = K
@@ -330,6 +429,7 @@ class PBCRLCoreAgent:
         self.c2_forced_zero_epochs = 0
         self.account.reset(K)
         self.radio_history.clear()
+        self._last_obs = None
 
     def note_window(self, epoch_rec: dict):
         prr = float(epoch_rec.get("window_prr", epoch_rec.get("prr", 1.0)) or 1.0)
@@ -389,9 +489,12 @@ class PBCRLCoreAgent:
             task_feats = torch.zeros(1, 0, 6, dtype=torch.float32)
             helper_feats = torch.zeros(1, 1, 4, dtype=torch.float32)
 
+        self._last_obs = (task_feats, helper_feats, radio_hist, budget_block)
+
         with torch.no_grad():
-            trunk_h = self.policy.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
-            lam_t, beta_prop_t, g_t_tensor = self.policy.forward_heads(trunk_h, deterministic=deterministic)
+            lam_t, beta_prop_t, g_t_tensor, logp, z_l, z_b, z_g, _ent = self.policy.forward_actions(
+                task_feats, helper_feats, radio_hist, budget_block, deterministic=deterministic
+            )
 
         lam_f = float(lam_t.reshape(()).cpu())
         beta_prop_f = float(beta_prop_t.reshape(()).cpu())
@@ -414,9 +517,15 @@ class PBCRLCoreAgent:
                 q_plus, _, _ = self.risk_model(obs_tensor, b_t)
                 q_plus_exec = float(q_plus.reshape(()).cpu())
             self.account.history_q_plus.append(q_plus_exec)
-            self.account.current_epoch += 1
 
-        return lam_f, beta_exec, torch.tensor(0.0), lam_f, beta_exec
+        obs_dict = {
+            "task_feats": task_feats.squeeze(0).tolist(),
+            "helper_feats": helper_feats.squeeze(0).tolist(),
+            "radio_hist": radio_hist.squeeze(0).tolist(),
+            "budget_block": budget_block.squeeze(0).tolist(),
+        }
+
+        return lam_f, beta_exec, logp.reshape(()), [float(z_l), float(z_b), float(z_g)], obs_dict
 
 
 class B5PrimeRAAgent:
@@ -475,7 +584,6 @@ class B5PrimeRAAgent:
                 q_plus, _, _ = self.risk_model(obs_tensor, b_t)
                 q_plus_exec = float(q_plus.reshape(()).cpu())
             self.account.history_q_plus.append(q_plus_exec)
-            self.account.current_epoch += 1
 
         return lam_f, beta_exec, logp, z_l, z_b
 

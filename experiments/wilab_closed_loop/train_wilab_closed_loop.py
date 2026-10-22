@@ -103,6 +103,43 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
         action["policy_mode"] = mode
         action["hq_spo_baseline"] = meta
         return action, torch.tensor(0.0)
+    # Structured Priority & Opportunity-Cost Controller (SPARC-V2X Redesign)
+    if policy_mode == "structured_priority" or getattr(policy, "is_structured_priority_policy", False):
+        from controllers.rl.hq_spo_baselines import assignments_to_action_fields
+        from controllers.rl.structured_priority_policy import score_and_match
+        b_cap = int(byte_budget) if byte_budget is not None else 175000
+        if hasattr(policy, "act_numpy"):
+            try:
+                ret = policy.act_numpy(state, layer=layer, deterministic=deterministic)
+            except TypeError:
+                ret = policy.act_numpy(state, deterministic=deterministic)
+            weights, beta, logp = ret[0], ret[1], ret[2]
+            z_w = ret[3] if len(ret) > 3 else [0.0, 0.0, 0.0, 0.0]
+            z_b = ret[4] if len(ret) > 4 else 0.0
+            sp_obs = ret[5] if len(ret) > 5 else None
+        else:
+            weights = getattr(policy, "weights", [2.5, 1.0, 1.0, 0.5])
+            beta = float(getattr(policy, "beta", 0.95))
+            logp = torch.tensor(0.0)
+            z_w = [0.0, 0.0, 0.0, 0.0]
+            z_b = 0.0
+            sp_obs = None
+        pack, meta = score_and_match(candidates, weights=weights, beta_throttle=beta, b_max=b_cap, unique_sources=unique_sources)
+        action = assignments_to_action_fields(pack, layer, budget, safe_actions)
+        action["n_candidates"] = int(len(candidates))
+        action["policy_mode"] = "structured_priority"
+        action["structured_priority_meta"] = meta
+        action["weights"] = list(weights)
+        action["beta_throttle"] = float(beta)
+        action["z_w"] = z_w
+        action["z_b"] = z_b
+        action["sp_obs"] = sp_obs
+        if sp_obs is not None:
+            action["sp_value"] = float(sp_obs.get("value", 0.0))
+            action["sp_cost_value"] = float(sp_obs.get("cost_value", 0.0))
+        if not torch.is_tensor(logp):
+            logp = torch.tensor(float(logp), dtype=torch.float32)
+        return action, logp
     # PB-CRL / B5′: shared price-and-budget packer (λ, β_exec).
     if policy_mode in ("price_budget", "b5_prime") or getattr(policy, "is_pb_crl_b5_prime", False):
         from controllers.rl.hq_spo_baselines import assignments_to_action_fields
@@ -110,15 +147,27 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
         from controllers.rl.pb_crl_b5_prime import state_vec_from_wilab
         b_cap = int(byte_budget) if byte_budget is not None else 175000
         svec = state_vec_from_wilab(state, layer)
-        if getattr(policy, "is_pb_crl_b5_prime", False):
+        if getattr(policy, "is_pb_crl_b5_prime", False) or getattr(policy, "is_pb_crl_policy", False):
             try:
-                lam, beta, logp, z_l, z_b = policy.act_numpy(svec, layer=layer, deterministic=deterministic)
+                ret = policy.act_numpy(svec, layer=layer, deterministic=deterministic)
             except TypeError:
-                lam, beta, logp, z_l, z_b = policy.act_numpy(svec, deterministic=deterministic)
+                ret = policy.act_numpy(svec, deterministic=deterministic)
+            if len(ret) == 5 and isinstance(ret[4], dict):
+                lam, beta, logp, pb_z, obs_dict = ret
+            elif len(ret) == 5:
+                lam, beta, logp, z_l, z_b = ret
+                pb_z = [float(z_l), float(z_b)]
+                obs_dict = None
+            else:
+                lam, beta, logp = ret[0], ret[1], ret[2]
+                pb_z = list(ret[3])
+                obs_dict = None
         else:
             lam = float(getattr(policy, "lam", 0.0) or 0.0)
             beta = float(getattr(policy, "beta", 1.0) or 1.0)
             logp = torch.tensor(0.0)
+            pb_z = [0.0, 0.0]
+            obs_dict = None
         pack = price_budget_pack(
             candidates, lam=lam, beta_exec=beta, b_max=b_cap, unique_sources=unique_sources,
         )
@@ -127,9 +176,12 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
         action["n_candidates"] = int(len(candidates))
         action["policy_mode"] = "price_budget"
         action["hq_spo_baseline"] = meta
-        action["pb_crl"] = {"lam": lam, "beta_prop": beta, "beta_exec": beta}
+        g_action = float(torch.sigmoid(torch.tensor(pb_z[2])) * 1.5 + 0.5) if len(pb_z) >= 3 else 1.0
+        action["pb_crl"] = {"lam": lam, "beta_prop": beta, "beta_exec": beta, "g": g_action}
         action["pb_state"] = list(svec)
-        action["pb_z"] = [float(z_l), float(z_b)]
+        action["pb_z"] = pb_z
+        if obs_dict is not None:
+            action["pb_full_obs"] = obs_dict
         if not torch.is_tensor(logp):
             logp = torch.tensor(float(logp), dtype=torch.float32)
         return action, logp
@@ -422,7 +474,7 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
     return action, logp_sum
 
 
-def run_episode(root, bridge, episode, density, policy, timeout, external_matlab=False, safety_only=False, generation_ms=10.0, allocation_ms=10.0, sim_seed=0, controller_epochs=100, forced_budget=None, tasks_per_source=3, all_eligible=False, forced_byte_budget=None, safety_payload_bytes=1000, simulation_time=20.0, policy_mode="residual", branch_epoch=None, deterministic=False, replay_mode="off", replay_file="", return_trace=False, task_seed=None, governor=None, value_envelope_bytes=250000, spread_task_arrivals=False, unique_sources=False, deadline_multiplier=1.0, max_candidates=None, helper_swap=None, force_pack=None, helper_cpu_lo=2e8, helper_cpu_hi=1e9, cluster_share=None):
+def run_episode(root, bridge, episode, density, policy, timeout, external_matlab=False, safety_only=False, generation_ms=10.0, allocation_ms=10.0, sim_seed=0, controller_epochs=100, forced_budget=None, tasks_per_source=3, all_eligible=False, forced_byte_budget=None, safety_payload_bytes=1000, simulation_time=20.0, policy_mode="residual", branch_epoch=None, deterministic=False, replay_mode="off", replay_file="", return_trace=False, task_seed=None, governor=None, value_envelope_bytes=250000, spread_task_arrivals=False, unique_sources=False, deadline_multiplier=1.0, max_candidates=None, helper_swap=None, force_pack=None, helper_cpu_lo=2e8, helper_cpu_hi=1e9, cluster_share=None, output_root=None, arrival_mode="legacy"):
     # helper_swap (optional diagnostic): {"epoch", "task_id", "from_helper", "to_helper"}
     # force_pack (optional diagnostic): {"epoch", "assignments": [...]} — replace proposal then re-apply governor
     # Applied after the governor on the executed assignment list only. Does not
@@ -430,8 +482,8 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
     # Use the extended trace for the post-warm-up WiLab horizon.  The legacy
     # 10 s traces are retained for provenance and are never overwritten.
     trace = root / "traces" / "mode2_external_validation" / f"synthetic_highway_rho_{density}_20s.txt"
-    output_root = Path(os.environ.get("WILAB_OUTPUT_ROOT", str(root / "results" / "additional_validation_20261007" / "wilab_closed_loop")))
-    out = output_root / f"episode_{episode:04d}"
+    out_root = Path(output_root) if output_root is not None else Path(os.environ.get("WILAB_OUTPUT_ROOT", str(root / "results" / "additional_validation_20261007" / "wilab_closed_loop")))
+    out = out_root / f"episode_{episode:04d}"
     out.mkdir(parents=True, exist_ok=True)
     # Materialize a run-local configuration so the simulator's scalar rho
     # agrees with the requested trace density.  The shared template contains
@@ -449,7 +501,8 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                       deadline_multiplier=deadline_multiplier,
                       helper_cpu_lo=helper_cpu_lo,
                       helper_cpu_hi=helper_cpu_hi,
-                      cluster_share=cluster_share)
+                      cluster_share=cluster_share,
+                      arrival_mode=arrival_mode)
     offered_value = sum(float(t.value) for t in layer.tasks)
     bridge.mkdir(parents=True, exist_ok=True)
     for p in bridge.glob("*.json"): p.unlink()
@@ -644,7 +697,8 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
             obs_vec = state_vector(state, epoch, controller_epochs, value_envelope_bytes if forced_byte_budget is None else forced_byte_budget)
             value = policy.value(obs_vec) if hasattr(policy, 'value') else torch.tensor(0.0)
             cost_value = policy.cost_value(obs_vec) if hasattr(policy, 'cost_value') else torch.tensor(0.0)
-            atomic_json_write(bridge / f"action_{episode:06d}_{epoch:06d}.json", action)
+            bridge_action = {k: v for k, v in action.items() if k not in ("sp_obs", "pb_full_obs")}
+            atomic_json_write(bridge / f"action_{episode:06d}_{epoch:06d}.json", bridge_action)
             result = wait_json(bridge / f"result_{episode:06d}_{epoch:06d}.json", timeout)
             before = layer.completed_value()
             delivered_ids = result.get("delivered_task_ids", [])
@@ -723,6 +777,8 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                 "pack_swap_gate": action.get("pack_swap_gate"),
                 "hq_spo_gate": action.get("hq_spo_gate"),
                 "hq_spo_baseline": action.get("hq_spo_baseline"),
+                "structured_priority_meta": action.get("structured_priority_meta"),
+                "weights": action.get("weights"),
                 "policy_mode": action.get("policy_mode"),
                 "reward": reward,
                 "delivered_source_ids": delivered_ids,
@@ -744,13 +800,20 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                 proposed_lp = torch.tensor(float(proposed_lp), dtype=torch.float32)
             logp.append((proposed_lp, reward))
             trace.append({
-                "logp": proposed_lp, "value": value, "cost_value": cost_value,
+                "logp": proposed_lp,
+                "value": action.get("sp_value", value),
+                "cost_value": action.get("sp_cost_value", cost_value),
                 "reward": float(reward),
                 "normalized_reward": float(reward) / max(offered_value, 1e-9),
                 "offered_value": offered_value,
                 "observation": obs_vec.detach().cpu().tolist(),
+                "sp_obs": action.get("sp_obs"),
+                "z_w": action.get("z_w"),
+                "z_b": action.get("z_b"),
                 "pb_state": action.get("pb_state"),
                 "pb_z": action.get("pb_z"),
+                "pb_crl": action.get("pb_crl"),
+                "pb_full_obs": action.get("pb_full_obs"),
                 "assignments": action.get("executed_assignments", action.get("assignments", [])),
                 "proposed_assignments": action.get("proposed_assignments", []),
                 "executed_assignments": action.get("executed_assignments", action.get("assignments", [])),

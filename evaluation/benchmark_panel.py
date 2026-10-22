@@ -54,19 +54,21 @@ def make_policy(name: str):
     if name == "B3_myopic_dual":
         return MyopicDualBaseline(lam=0.0, eta=0.05, alpha=0.02)
     if name == "PB_CRL_foundation":
+        if not B5P_CKPT.is_file():
+            raise FileNotFoundError(f"Missing required checkpoint for {name}: {B5P_CKPT}")
         pol = B5PrimePolicy(state_dim=16, hidden=64)
-        if B5P_CKPT.is_file():
-            ck = torch.load(B5P_CKPT, map_location="cpu")
-            pol.load_state_dict(ck["policy"], strict=False)
+        ck = torch.load(B5P_CKPT, map_location="cpu")
+        pol.load_state_dict(ck["policy"], strict=False)
         pol.eval()
         for p in pol.parameters():
             p.requires_grad_(False)
         return pol
     if name == "PB_CRL_trained":
+        if not PBCRL_TRAINED_CKPT.is_file():
+            raise FileNotFoundError(f"Missing required checkpoint for {name}: {PBCRL_TRAINED_CKPT}")
         pol = B5PrimePolicy(state_dim=16, hidden=64)
-        if PBCRL_TRAINED_CKPT.is_file():
-            ck = torch.load(PBCRL_TRAINED_CKPT, map_location="cpu")
-            pol.load_state_dict(ck["policy"], strict=False)
+        ck = torch.load(PBCRL_TRAINED_CKPT, map_location="cpu")
+        pol.load_state_dict(ck["policy"], strict=False)
         pol.eval()
         for p in pol.parameters():
             p.requires_grad_(False)
@@ -75,7 +77,9 @@ def make_policy(name: str):
     pol = ResidualTaskPolicy(logit_mode="direct", logit_scale=100.0)
     if name == "B4_ce_milp":
         pol.ce_weights = CeRiskWeights.load()
-    if name == "B5_ppo_lag" and B5_CKPT.is_file():
+    if name == "B5_ppo_lag":
+        if not B5_CKPT.is_file():
+            raise FileNotFoundError(f"Missing required checkpoint for {name}: {B5_CKPT}")
         ck = torch.load(B5_CKPT, map_location="cpu")
         pol.load_state_dict(ck["policy"], strict=False)
     pol.eval()
@@ -89,7 +93,6 @@ def run_one(name: str, mode: str, *, eid: int, sim_seed: int, task_seed: int, ru
     bridge = Path(tempfile.gettempdir()) / f"bench_{os.getpid()}_{eid}"
     if bridge.exists():
         shutil.rmtree(bridge, ignore_errors=True)
-    os.environ["WILAB_OUTPUT_ROOT"] = str(runs_dir)
     gov = SafetyGovernor(ENVELOPE, horizon_envelope_only=True)
 
     t0 = time.perf_counter()
@@ -100,14 +103,19 @@ def run_one(name: str, mode: str, *, eid: int, sim_seed: int, task_seed: int, ru
         300, sim_time, mode, None,
         True, "off", "", True, task_seed, gov,
         ENVELOPE, True, True, 1.0, None, None, None, 2e8, 1e9,
+        output_root=runs_dir,
     )
     wall = time.perf_counter() - t0
 
     ep_dir = runs_dir / f"episode_{eid:04d}"
     audit_file = ep_dir / "bridge_audit.json"
-    audit = json.loads(audit_file.read_text(encoding="utf-8")) if audit_file.is_file() else []
+    if not audit_file.is_file():
+        raise FileNotFoundError(f"Missing required audit file for episode {eid}: {audit_file}")
+    audit = json.loads(audit_file.read_text(encoding="utf-8"))
 
     valid = [e for e in audit if e.get("cbr_valid") and e.get("delay_valid")]
+    if not valid:
+        raise RuntimeError(f"No valid radio sensing windows found for episode {eid} in {audit_file}")
     prr = [float(e.get("window_prr", e.get("prr", 1.0))) for e in valid]
     cbr = [float(e.get("cbr", 0.0)) for e in valid]
     delay = [float(e.get("p95_delay_ms", 0.0)) for e in valid]
