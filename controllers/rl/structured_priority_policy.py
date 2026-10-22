@@ -79,6 +79,8 @@ class StructuredPriorityPolicy(nn.Module):
         budget_dim: int = 3,
         hidden: int = 128,
         w_max: float = 5.0,
+        init_log_std_w: float = 0.0,
+        init_log_std_beta: float = 0.0,
     ):
         super().__init__()
         self.w_max = float(w_max)
@@ -103,8 +105,8 @@ class StructuredPriorityPolicy(nn.Module):
         self.head_beta = nn.Linear(hidden, 1)
 
         # Learnable log-std parameters for PPO exploration
-        self.log_std_w = nn.Parameter(torch.tensor([-0.8, -0.8, -0.8, -0.8]))
-        self.log_std_beta = nn.Parameter(torch.tensor(-1.0))
+        self.log_std_w = nn.Parameter(torch.full((4,), float(init_log_std_w)))
+        self.log_std_beta = nn.Parameter(torch.tensor(float(init_log_std_beta)))
 
         # Twin critics
         self.v_r_head = nn.Sequential(nn.Linear(hidden, 64), nn.Tanh(), nn.Linear(64, 1))
