@@ -198,6 +198,22 @@ def train(args):
         train_vs = [r[0] for r in ep_results]
         traces = [prepare_trace(r[3]) for r in ep_results if r[3]]
 
+        # Decision experience metrics
+        informative_steps = 0
+        active_states = 0
+        distinct_matchings = set()
+        for tr in traces:
+            for item in tr:
+                cands_cnt = item.get("n_candidates", 0)
+                if cands_cnt > 0:
+                    active_states += 1
+                sp_obs = item.get("sp_obs")
+                assn = tuple(sorted([(a["task_id"], a["helper_id"]) for a in (item.get("assignments") or item.get("executed_assignments") or [])]))
+                if assn:
+                    distinct_matchings.add(assn)
+                if sp_obs is not None:
+                    informative_steps += 1
+
         # PPO update
         stats = structured_priority_ppo_update(
             policy, optimizer, traces, lam_L,
@@ -211,6 +227,7 @@ def train(args):
         cur_w = [float(f"{x:.3f}") for x in (torch.sigmoid(policy.head_w.bias) * policy.w_max).detach().cpu().numpy()]
         cur_beta = float(torch.sigmoid(policy.head_beta.bias).detach().cpu().item())
         print(f"  Round {rnd+1} complete in {round_el:.1f}s | Mean Train V = {np.mean(train_vs):.2f} | Mean Cost = {mean_cost:.4f} | New lam_L = {lam_L:.4f}")
+        print(f"  Decision Experience: Active States = {active_states} | Informative Transitions = {informative_steps} | Distinct Matchings = {len(distinct_matchings)}")
         print(f"  Policy State: Priority Weights w = {cur_w} | Throttle beta = {cur_beta:.3f}")
         if stats:
             print(f"  PPO Stats: Actor Loss = {stats['actor_loss']:.4f} | Value Loss = {stats['value_loss']:.4f} | Cost Loss = {stats['cost_loss']:.4f} | Grad Norm = {stats.get('grad_norm', 0.0):.4f} | KL = {stats['approx_kl']:.4f}")
@@ -222,7 +239,7 @@ def train(args):
                 policy, curve_seeds, runs_dir, eid, args.sim_time, args.density, args.tasks_per_source, workers=args.workers,
             )
             delta_b4 = val_v - 59.79
-            delta_init = val_v - 58.89
+            delta_init = val_v - 59.79
             for r in val_rows:
                 print(f"      Seed {r['seed']}: V_done = {r['V_done']:.2f} | P_viol = {r['P_viol']*100:.2f}% | PRR = {r['mean_prr']:.4f}")
             print(f"  >>> Validation Mean V: {val_v:.2f} (d_B4: {delta_b4:+.2f}, d_Init: {delta_init:+.2f}) | PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
@@ -231,6 +248,9 @@ def train(args):
                 "round": rnd + 1,
                 "wall_s": round_el,
                 "train_mean_v": float(np.mean(train_vs)),
+                "active_states": active_states,
+                "informative_steps": informative_steps,
+                "distinct_matchings": len(distinct_matchings),
                 "val_mean_v": val_v,
                 "val_mean_p_viol": val_pv,
                 "val_feasible_fraction": val_safe,
