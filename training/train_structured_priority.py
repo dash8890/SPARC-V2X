@@ -165,6 +165,7 @@ def train(args):
     best_feas_path = CHECKPOINTS_DIR / "structured_priority_best_feasible.pt"
 
     t_start = time.perf_counter()
+    history = []
 
     for rnd in range(args.rounds):
         round_t0 = time.perf_counter()
@@ -201,9 +202,12 @@ def train(args):
         lam_L = dual_ascent(lam_L, mean_cost, cost_limit=ALPHA, lr_dual=args.lr_dual)
 
         round_el = time.perf_counter() - round_t0
+        cur_w = [float(f"{x:.3f}") for x in (torch.sigmoid(policy.head_w.bias) * policy.w_max).detach().cpu().numpy()]
+        cur_beta = float(torch.sigmoid(policy.head_beta.bias).detach().cpu().item())
         print(f"  Round {rnd+1} complete in {round_el:.1f}s | Mean Train V = {np.mean(train_vs):.2f} | Mean Cost = {mean_cost:.4f} | New lam_L = {lam_L:.4f}")
+        print(f"  Policy State: Priority Weights w = {cur_w} | Throttle beta = {cur_beta:.3f}")
         if stats:
-            print(f"  PPO Stats: Actor Loss = {stats['actor_loss']:.4f} | Value Loss = {stats['value_loss']:.4f} | Cost Loss = {stats['cost_loss']:.4f} | KL = {stats['approx_kl']:.4f}")
+            print(f"  PPO Stats: Actor Loss = {stats['actor_loss']:.4f} | Value Loss = {stats['value_loss']:.4f} | Cost Loss = {stats['cost_loss']:.4f} | Grad Norm = {stats.get('grad_norm', 0.0):.4f} | KL = {stats['approx_kl']:.4f}")
 
         # Evaluation
         if (rnd + 1) % args.eval_every == 0 or (rnd + 1) == args.rounds:
@@ -211,9 +215,33 @@ def train(args):
             val_v, val_prr, val_cbr, val_pv, val_safe, val_rows, eid = eval_model(
                 policy, curve_seeds, runs_dir, eid, args.sim_time, args.density, args.tasks_per_source, workers=args.workers,
             )
+            delta_b4 = val_v - 59.79
+            delta_init = val_v - 58.89
             for r in val_rows:
                 print(f"      Seed {r['seed']}: V_done = {r['V_done']:.2f} | P_viol = {r['P_viol']*100:.2f}% | PRR = {r['mean_prr']:.4f}")
-            print(f"  >>> Validation Mean V: {val_v:.2f} | PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
+            print(f"  >>> Validation Mean V: {val_v:.2f} (ΔB4: {delta_b4:+.2f}, ΔInit: {delta_init:+.2f}) | PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
+
+            round_entry = {
+                "round": rnd + 1,
+                "wall_s": round_el,
+                "train_mean_v": float(np.mean(train_vs)),
+                "val_mean_v": val_v,
+                "val_mean_p_viol": val_pv,
+                "val_feasible_fraction": val_safe,
+                "delta_b4": delta_b4,
+                "delta_init": delta_init,
+                "lam_L": lam_L,
+                "weights_bias": cur_w,
+                "beta_bias": cur_beta,
+                "actor_loss": stats.get("actor_loss", 0.0),
+                "value_loss": stats.get("value_loss", 0.0),
+                "cost_loss": stats.get("cost_loss", 0.0),
+                "grad_norm": stats.get("grad_norm", 0.0),
+                "approx_kl": stats.get("approx_kl", 0.0),
+                "val_rows": val_rows,
+            }
+            history.append(round_entry)
+            (out_dir / "sp_training_history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
 
             if val_v > best_v:
                 best_v = val_v

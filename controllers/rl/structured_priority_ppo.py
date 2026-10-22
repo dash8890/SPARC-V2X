@@ -126,6 +126,7 @@ def structured_priority_ppo_update(
     cost_losses = []
     approx_kls = []
 
+    grad_norms = []
     for _ in range(epochs):
         indices = list(range(len(steps)))
         random.shuffle(indices)
@@ -186,7 +187,8 @@ def structured_priority_ppo_update(
 
             optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=0.5)
+            gnorm = torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=0.5)
+            grad_norms.append(float(gnorm.item()))
             optimizer.step()
 
             actor_losses.append(float((total_actor_loss / bsz).detach().cpu()))
@@ -200,5 +202,6 @@ def structured_priority_ppo_update(
         "value_loss": float(np.mean(value_losses)) if value_losses else 0.0,
         "cost_loss": float(np.mean(cost_losses)) if cost_losses else 0.0,
         "approx_kl": float(np.mean(approx_kls)) if approx_kls else 0.0,
+        "grad_norm": float(np.mean(grad_norms)) if grad_norms else 0.0,
         "mean_epoch_violation_rate": float(np.mean(costs_all)) if costs_all else 0.0,
     }
