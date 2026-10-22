@@ -24,7 +24,10 @@ tmp*
 *.xls
 
 # Checkpoints and notebook outputs
-checkpoints/
+checkpoints/*
+!checkpoints/b5_baseline_panel_39p91.pt
+!checkpoints/b5_prime_best_preserved_43p86.pt
+!checkpoints/pb_crl_trained_best.pt
 *.ipynb
 
 # Legacy superseded experimental modules (untracked)

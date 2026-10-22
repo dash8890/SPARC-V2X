@@ -470,6 +470,8 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
     try:
         epoch = 0
         while True:
+            if controller_epochs is not None and epoch >= int(controller_epochs):
+                break
             state_path = bridge / f"state_{episode:06d}_{epoch:06d}.json"
             deadline = time.monotonic() + min(timeout, 600.0)
             while not state_path.exists():
@@ -803,14 +805,14 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
     finally:
         if proc is not None and proc.poll() is None:
             try:
-                proc.wait(timeout=10.0)
+                proc.wait(timeout=60.0)
             except Exception:
                 try:
                     proc.kill()
                 except Exception:
                     pass
         log_handle.close()
-        if proc is not None and proc.returncode != 0:
+        if proc is not None and proc.returncode != 0 and (controller_epochs is None or epoch < int(controller_epochs)):
             raise RuntimeError(f"MATLAB episode failed ({proc.returncode}); see {log_path}:\n{log_path.read_text(encoding='utf-8', errors='replace')[-4000:]}")
     (out / "bridge_audit.json").write_text(json.dumps(audit, indent=2), encoding="utf-8")
     # Always persist machine-readable performance metrics (episode/epoch/task/decision).

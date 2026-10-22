@@ -6,6 +6,7 @@ tasks_per_source = 4, density = 35) to verify restored throughput and safety.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import os
 import shutil
@@ -16,6 +17,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -30,6 +37,7 @@ from controllers.rl.hq_spo_baselines import CeRiskWeights, MyopicDualBaseline
 ENVELOPE = 175000
 B5_CKPT = ROOT / "checkpoints" / "b5_baseline_panel_39p91.pt"
 B5P_CKPT = ROOT / "checkpoints" / "b5_prime_best_preserved_43p86.pt"
+PBCRL_TRAINED_CKPT = ROOT / "checkpoints" / "pb_crl_trained_best.pt"
 
 METHODS = [
     ("B1_greedy_vb", "greedy_vb"),
@@ -38,6 +46,7 @@ METHODS = [
     ("B4_ce_milp", "ce_milp"),
     ("B5_ppo_lag", "residual"),
     ("PB_CRL_foundation", "b5_prime"),
+    ("PB_CRL_trained", "b5_prime"),
 ]
 
 
@@ -48,6 +57,15 @@ def make_policy(name: str):
         pol = B5PrimePolicy(state_dim=16, hidden=64)
         if B5P_CKPT.is_file():
             ck = torch.load(B5P_CKPT, map_location="cpu")
+            pol.load_state_dict(ck["policy"], strict=False)
+        pol.eval()
+        for p in pol.parameters():
+            p.requires_grad_(False)
+        return pol
+    if name == "PB_CRL_trained":
+        pol = B5PrimePolicy(state_dim=16, hidden=64)
+        if PBCRL_TRAINED_CKPT.is_file():
+            ck = torch.load(PBCRL_TRAINED_CKPT, map_location="cpu")
             pol.load_state_dict(ck["policy"], strict=False)
         pol.eval()
         for p in pol.parameters():
@@ -66,7 +84,8 @@ def make_policy(name: str):
     return pol
 
 
-def run_one(policy, mode: str, *, eid: int, sim_seed: int, task_seed: int, runs_dir: Path, sim_time: float = 12.0, density: int = 35):
+def run_one(name: str, mode: str, *, eid: int, sim_seed: int, task_seed: int, runs_dir: Path, sim_time: float = 12.0, density: int = 35):
+    policy = make_policy(name)
     bridge = Path(tempfile.gettempdir()) / f"bench_{os.getpid()}_{eid}"
     if bridge.exists():
         shutil.rmtree(bridge, ignore_errors=True)
@@ -96,6 +115,8 @@ def run_one(policy, mode: str, *, eid: int, sim_seed: int, task_seed: int, runs_
     p_viol = viols / max(len(valid), 1)
 
     return {
+        "method": name,
+        "sim_seed": sim_seed,
         "V_done": float(completed),
         "P_viol": p_viol,
         "n_viols": viols,
@@ -112,6 +133,7 @@ def main():
     ap.add_argument("--seeds", type=int, nargs="+", default=[73100, 73101, 73102, 73103])
     ap.add_argument("--sim-time", type=float, default=12.0)
     ap.add_argument("--density", type=int, default=35)
+    ap.add_argument("--workers", type=int, default=4)
     args = ap.parse_args()
 
     out_dir = ROOT / "sparc_performance_evaluation" / "results" / "raw" / "benchmark_panel"
@@ -120,22 +142,37 @@ def main():
     runs_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'='*80}")
-    print(f"SPARC-V2X Restored Benchmark Panel (B1–B5 & PB-CRL Foundation)")
-    print(f"Seeds: {args.seeds} | Sim Time: {args.sim_time}s | Density: {args.density} | TPS: 4")
+    print(f"SPARC-V2X Restored Benchmark Panel (B1–B5 & PB-CRL)")
+    print(f"Seeds: {args.seeds} | Sim Time: {args.sim_time}s | Density: {args.density} | TPS: 4 | Workers: {args.workers}")
     print(f"{'='*80}\n")
 
-    results = []
-    eid = 20000
+    existing_eids = [int(p.name.split("_")[1]) for p in runs_dir.glob("episode_*") if len(p.name.split("_")) > 1 and p.name.split("_")[1].isdigit()]
+    eid_cur = (max(existing_eids) + 1) if existing_eids else 20000
+
+    tasks = []
     for seed in args.seeds:
         task_seed = 186100 + (seed - 73100)
-        print(f"\n--- Seed {seed} ---")
         for name, mode in METHODS:
-            eid += 1
-            pol = make_policy(name)
-            res = run_one(pol, mode, eid=eid, sim_seed=seed, task_seed=task_seed, runs_dir=runs_dir, sim_time=args.sim_time, density=args.density)
-            row = {"method": name, "sim_seed": seed, **res}
-            results.append(row)
-            print(f"  {name:<20} | V = {res['V_done']:<6.2f} | PRR = {res['mean_prr']:<6.4f} | CBR = {res['mean_cbr']:<6.4f} | P_viol = {res['P_viol']:<6.4f} | Feasible: {res['feasible']}")
+            eid_cur += 1
+            tasks.append((name, mode, eid_cur, seed, task_seed, runs_dir, args.sim_time, args.density))
+
+    results = []
+    if args.workers > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
+            future_to_task = {
+                executor.submit(
+                    run_one, t[0], t[1], eid=t[2], sim_seed=t[3], task_seed=t[4], runs_dir=t[5], sim_time=t[6], density=t[7]
+                ): t for t in tasks
+            }
+            for fut in concurrent.futures.as_completed(future_to_task):
+                res = fut.result()
+                results.append(res)
+                print(f"  {res['method']:<20} (Seed {res['sim_seed']}) | V = {res['V_done']:<6.2f} | PRR = {res['mean_prr']:<6.4f} | CBR = {res['mean_cbr']:<6.4f} | P_viol = {res['P_viol']:<6.4f} | Feasible: {res['feasible']}")
+    else:
+        for t in tasks:
+            res = run_one(t[0], t[1], eid=t[2], sim_seed=t[3], task_seed=t[4], runs_dir=t[5], sim_time=t[6], density=t[7])
+            results.append(res)
+            print(f"  {res['method']:<20} (Seed {res['sim_seed']}) | V = {res['V_done']:<6.2f} | PRR = {res['mean_prr']:<6.4f} | CBR = {res['mean_cbr']:<6.4f} | P_viol = {res['P_viol']:<6.4f} | Feasible: {res['feasible']}")
 
     # Summary table
     print(f"\n{'='*80}")
