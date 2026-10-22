@@ -95,4 +95,5 @@ python sparc_performance_evaluation/scripts/train_pb_crl_b5_prime.py
 
 - [**System Architecture & Algorithms**](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/docs/ARCHITECTURE.md)
 - [**Empirical Synthesis & Sidelink Physics**](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/docs/EMPIRICAL_SYNTHESIS.md)
+- [**Forensic Analysis & Root-Cause Restoration**](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/docs/FORENSIC_ROOT_CAUSE_AND_RESTORATION.md)
 - [**Research Roadmap & Milestones**](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/docs/ROADMAP.md)

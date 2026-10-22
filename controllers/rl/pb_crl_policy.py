@@ -313,6 +313,7 @@ class PBCRLCoreAgent:
         K: int = 1,
         total_epochs: int = 50,
         delta_s: float = 0.05,
+        shield_enabled: bool = False,
     ):
         self.policy = policy
         self.risk_model = risk_model
@@ -321,6 +322,7 @@ class PBCRLCoreAgent:
         self.c2_K = K
         self.c2_Z = 0
         self.c2_forced_zero_epochs = 0
+        self.shield_enabled = bool(shield_enabled)
 
     def reset_c2(self, K: Optional[int] = None):
         self.c2_K = K
@@ -399,12 +401,20 @@ class PBCRLCoreAgent:
         svec = list(state_vec) + [0.0] * max(0, 16 - len(state_vec))
         obs_tensor = torch.tensor([svec[:16]], dtype=torch.float32)
 
-        # Evaluate predictive shield
-        beta_exec, q_plus_exec, p_allow = self.account.evaluate_shield(obs_tensor, beta_prop_f, g_t=g_f)
-        self.account.deduct_and_record(q_plus_exec)
-
-        if beta_exec == 0.0 and beta_prop_f > 0.0:
-            self.c2_forced_zero_epochs += 1
+        # Action execution: direct un-handcuffed policy by default, or shielded if enabled
+        if self.shield_enabled:
+            beta_exec, q_plus_exec, p_allow = self.account.evaluate_shield(obs_tensor, beta_prop_f, g_t=g_f)
+            self.account.deduct_and_record(q_plus_exec)
+            if beta_exec == 0.0 and beta_prop_f > 0.0:
+                self.c2_forced_zero_epochs += 1
+        else:
+            beta_exec = beta_prop_f
+            with torch.no_grad():
+                b_t = torch.tensor([[beta_exec]], dtype=torch.float32, device=obs_tensor.device)
+                q_plus, _, _ = self.risk_model(obs_tensor, b_t)
+                q_plus_exec = float(q_plus.reshape(()).cpu())
+            self.account.history_q_plus.append(q_plus_exec)
+            self.account.current_epoch += 1
 
         return lam_f, beta_exec, torch.tensor(0.0), lam_f, beta_exec
 
@@ -421,6 +431,7 @@ class B5PrimeRAAgent:
         K: int = 1,
         total_epochs: int = 50,
         delta_s: float = 0.05,
+        shield_enabled: bool = False,
     ):
         self.b5_policy = b5_prime_policy
         self.risk_model = risk_model
@@ -428,6 +439,7 @@ class B5PrimeRAAgent:
         self.c2_K = K
         self.c2_Z = 0
         self.c2_forced_zero_epochs = 0
+        self.shield_enabled = bool(shield_enabled)
 
     def reset_c2(self, K: Optional[int] = None):
         self.c2_K = K
@@ -451,11 +463,19 @@ class B5PrimeRAAgent:
         svec = list(state_vec) + [0.0] * max(0, 16 - len(state_vec))
         obs_tensor = torch.tensor([svec[:16]], dtype=torch.float32)
 
-        beta_exec, q_plus_exec, p_allow = self.account.evaluate_shield(obs_tensor, beta_prop_f, g_t=1.0)
-        self.account.deduct_and_record(q_plus_exec)
-
-        if beta_exec == 0.0 and beta_prop_f > 0.0:
-            self.c2_forced_zero_epochs += 1
+        if self.shield_enabled:
+            beta_exec, q_plus_exec, p_allow = self.account.evaluate_shield(obs_tensor, beta_prop_f, g_t=1.0)
+            self.account.deduct_and_record(q_plus_exec)
+            if beta_exec == 0.0 and beta_prop_f > 0.0:
+                self.c2_forced_zero_epochs += 1
+        else:
+            beta_exec = beta_prop_f
+            with torch.no_grad():
+                b_t = torch.tensor([[beta_exec]], dtype=torch.float32, device=obs_tensor.device)
+                q_plus, _, _ = self.risk_model(obs_tensor, b_t)
+                q_plus_exec = float(q_plus.reshape(()).cpu())
+            self.account.history_q_plus.append(q_plus_exec)
+            self.account.current_epoch += 1
 
         return lam_f, beta_exec, logp, z_l, z_b
 

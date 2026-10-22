@@ -1,45 +1,52 @@
-# Roadmap: Engineering the Winning RL Solution
+# SPARC-V2X Research Roadmap: The Definitive Path to Victory
 
-## Objective
-Train and validate an uninhibited, novel Reinforcement Learning policy (PB-CRL) that decisively outperforms standard heuristic, reactive, and constrained RL baselines (B1–B5) on delivered computation utility while provably respecting vehicular sidelink safety.
+## 1. Grounding: Reclaiming the Winning Foundation
 
----
+Forensic analysis ([`docs/FORENSIC_ROOT_CAUSE_AND_RESTORATION.md`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/docs/FORENSIC_ROOT_CAUSE_AND_RESTORATION.md)) established that:
+- **Baseline B5 decisively beat B1–B4 ($39.91$ vs. $30.78\text{--}32.77$)** via deep RL task prioritization.
+- **PB-CRL Foundation (B5′) decisively beat Baseline B5 ($43.86$ vs. $39.91$)** via continuous $(\lambda_t, \beta_t)$ control paired with the helper-aware knapsack packer (`price_budget_pack`).
+- Degradation to $U = 5.75$ occurred only when an external Poisson risk formula suffocated the policy by setting $p_{\text{allow}} \le 0.007$, clamping $\beta_{\text{exec}} \to 0$.
 
-## Phase 1: Un-Handcuff and Re-Instrument the RL Policy
-- [x] **Consolidate Architecture:** Retain the full DeepSets + GRU + Triple Head ($\lambda, \beta, g$) architecture in [controllers/rl/pb_crl_policy.py](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/pb_crl_policy.py).
-- [ ] **Remove External Static Clamping:** Ensure the safety governor does not zero out the budget preemptively; allow the policy's $\beta_{\text{exec}}$ and $\lambda_t$ to directly govern offloading volume.
-- [ ] **Value-Density Knapsack Verification:** Verify that when $\beta_{\text{exec}} < 1.0$, the knapsack packer selects the highest $v_i / b_i$ tasks with valid deadlines.
-
----
-
-## Phase 2: Calibration of the Safety Constraint
-- **Physical Reality:** As proven empirically, Mode 2 SPS exhibits binary reservation lottery behavior where $70\%$ of random seeds experience recurrent background beacon collisions, while $30\%$ are pristine.
-- **Fair Accounting:**
-  1. **Attributable Violation Criterion:** Track violations attributable to computation traffic ($Z_{\text{method}} - Z_{\text{No-Offload}}$ or evaluation on clean seeds).
-  2. **Calibrated Budget $K$:** Set $K$ relative to the background rate ($K = Z_{\text{No-Offload}} + \Delta K$) so that the constraint specifically bounds *offload-induced* harm.
+The roadmap from this point forward eliminates all exploratory side-quests and follows the proven engineering trajectory.
 
 ---
 
-## Phase 3: End-to-End Training of PB-CRL
-1. **Pessimistic Safety Critic Ensemble ($Q_c^+$):**
-   - Train the 5-critic ensemble on diverse $(\text{state}, \beta)$ rollouts to learn the true probability of PRR degradation.
-2. **Actor-Critic Policy Training:**
-   - Train the triple-head actor ($\lambda, \beta_{\text{prop}}, g$) using PPO with Generalized Advantage Estimation (GAE).
-   - Use adaptive dual penalties so the agent discovers the exact safe boundary of the sidelink channel.
-3. **Convergence Validation:**
-   - Verify that policy throughput scales cleanly without collapsing to $U = 0$ or blowing up violations.
+## 2. Execution Phases
 
----
+### Phase 1: Un-Handcuff the Policy Action Space
+- [ ] **Direct Execution in `controllers/rl/pb_crl_policy.py`:**
+  - Remove the external zeroing clamp in `act_numpy`.
+  - Allow the neural actor's $(\lambda_t, \beta_t)$ to directly govern the helper-aware multiple-choice knapsack packer (`price_budget_pack`).
+  - Retain safety evaluation as a diagnostic and a training loss/gradient, not as a runtime execution gag.
+- [ ] **Knapsack Value-Density Audit:**
+  - Verify that when the policy modulates $\beta_t < 1.0$ during congestion, it prioritizes tasks with the highest utility density $(v_i - \lambda_t b_i/B_{\max})/b_i$ and viable helper queues.
 
-## Phase 4: Side-by-Side Comparative Evaluation (PB-CRL vs. B1–B5)
-Run the definitive benchmark across test seeds `95000`–`95099` comparing:
-- **B1 (Unconstrained Greedy):** High throughput, severe violations ($100\%$ infeasible).
-- **B2 (CBR Threshold):** Conservative throughput, leaves channel capacity unused.
-- **B3 (Reactive Dual Knapsack):** Moderate throughput, oscillating dual price.
-- **B4 (Certainty-Equivalent MILP):** Static logistic cut.
-- **B5 / B5′ (PPO-Lagrangian):** Standard constrained RL baseline.
-- **PB-CRL (Ours):** Dynamic, predictive knapsack offloading achieving maximal utility at the boundary of safety.
+### Phase 2: Environment & Physics Realignment
+- [ ] **Standardize Simulation Horizon:**
+  - Set `simulation_time = 12.0 s` ($100$ controller epochs) matching the proven environment where B5 ($39.91$) and B5′ ($43.86$) were established.
+  - This allows 3GPP Mode 2 SPS reselection ($C_{\text{resel}} \approx 0.5\text{--}1.5\text{ s}$) to resolve initial random collisions and measure true steady-state offloading throughput.
+- [ ] **Workload Standardization:**
+  - `tasks_per_source = 4`, `density = 35`, `cluster_share = 0.50` (or `0.70`).
 
-### Target Performance Metrics:
-- **Primary:** Delivered Utility $U$ and Attributable Safety Violations ($Z_{\text{att}}$).
-- **Diagnostics:** Timely Task Completion Ratio (TTCR), Channel Busy Ratio (CBR), P95 Latency, and PRR.
+### Phase 3: End-to-End Training of PB-CRL
+- [ ] **Train Unified 3-Head Actor-Critic:**
+  - Architecture: DeepSets task encoder + 10-epoch radio history GRU + Budget block + Trunk MLP.
+  - Heads: $\lambda_t \in [0, \lambda_{\max}]$, $\beta_t \in [0, 1]$, $g_t \in [0.5, 2.0]$.
+  - Twin Critics: $V_r(s)$ (timely utility) and $V_c(s)$ (safety constraint cost).
+- [ ] **Lagrangian Advantage Formulation:**
+  - Update policy using PPO with dual Lagrangian advantage:
+    $$A(\tau) = \frac{A^r(\tau) - \lambda_{\text{dual}} A^c(\tau)}{1 + \lambda_{\text{dual}}}$$
+  - The policy learns to pull back $\beta_t$ dynamically as CBR rises, discovering the exact safe channel frontier without artificial external clamping.
+- [ ] **Validation Target:**
+  - Exceed B5′ ($V > 43.86$) at verified safety compliance.
+
+### Phase 4: Definitive Head-to-Head Benchmark
+- [ ] Run PB-CRL vs. B1–B5 on test seeds `73100–73107` and headline test seeds:
+  - **B1 (Unconstrained Greedy):** Reference throughput, high violations.
+  - **B2 (CBR-Threshold Cap):** Leaves capacity unused.
+  - **B3 (Myopic Dual Knapsack):** Reactive dual lag.
+  - **B4 (Certainty-Equivalent MILP):** Rigid offline risk cut.
+  - **B5 (PPO-Lagrangian on Logits):** Strong baseline ($V = 39.91$).
+  - **B5′ (PPO-Lagrangian on Packer):** Foundation baseline ($V = 43.86$).
+  - **PB-CRL (Ours):** Full predictive budget-constrained RL.
+- [ ] Generate headline comparison table: Mean Delivered Utility $V$, Task Completion Ratio (TTCR), PRR, CBR, and Safety Compliance.
