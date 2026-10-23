@@ -29,6 +29,8 @@ checkpoints/*
 !checkpoints/b5_prime_best_preserved_43p86.pt
 !checkpoints/pb_crl_trained_best.pt
 !checkpoints/structured_priority_best.pt
+!checkpoints/scql_best.pt
+!checkpoints/scql_warm_start.pt
 *.ipynb
 
 # Legacy superseded experimental modules (untracked)
@@ -43,6 +45,7 @@ tests/*
 !tests/test_causal_safety_guard.py
 !tests/test_replay_determinism.py
 !tests/test_counterfactual_preference_loss.py
+!tests/test_scql_architecture.py
 analysis/
 mobility/
 

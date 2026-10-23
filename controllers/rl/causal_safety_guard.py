@@ -81,7 +81,7 @@ def filter_candidates_causal_guard(
         sid = c.get("source_id")
         hid = c.get("helper_id")
 
-        dist = 0.0
+        dist = float(c.get("_dist") or 0.0)
         if layer is not None and hasattr(layer, "source_kinematics") and sid in layer.source_kinematics:
             src_kin = layer.source_kinematics[sid]
             hlp = next((h for h in getattr(layer, "helpers", []) if getattr(h, "helper_id", None) == hid), None)
@@ -92,7 +92,7 @@ def filter_candidates_causal_guard(
                 y_h = hlp.kinematics.y
                 dist = math.hypot(x_s - x_h, y_s - y_h)
 
-        risk = causal_sidelink_risk(dist, b_k, r_comm=r_comm, b_max=float(b_max))
+        risk = float(c.get("_risk") or causal_sidelink_risk(dist, b_k, r_comm=r_comm, b_max=float(b_max)))
 
         is_risky = (
             (risk > r_thresh) or

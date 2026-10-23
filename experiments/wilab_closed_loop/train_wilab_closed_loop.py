@@ -103,6 +103,21 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
         action["policy_mode"] = mode
         action["hq_spo_baseline"] = meta
         return action, torch.tensor(0.0)
+    # SCQL: Sequential Capacity-Aware Q-Learning
+    if policy_mode == "scql" or getattr(policy, "is_scql_policy", False):
+        from controllers.rl.hq_spo_baselines import assignments_to_action_fields
+        b_cap = int(byte_budget) if byte_budget is not None else 175000
+        if hasattr(policy, "update_history") and "cbr" in state:
+            cbr_val = float(state.get("cbr", 0.04) or 0.04)
+            policy.update_history(cbr_val)
+        pack, meta = policy._sequential_match(
+            candidates, b_max=b_cap, unique_sources=unique_sources, layer=layer, deterministic=deterministic
+        )
+        action = assignments_to_action_fields(pack, layer, budget, safe_actions)
+        action["n_candidates"] = int(len(candidates))
+        action["policy_mode"] = "scql"
+        action["scql_meta"] = meta
+        return action, torch.tensor(0.0)
     # Structured Priority & Opportunity-Cost Controller (SPARC-V2X Redesign)
     if policy_mode == "structured_priority" or getattr(policy, "is_structured_priority_policy", False):
         from controllers.rl.hq_spo_baselines import assignments_to_action_fields
