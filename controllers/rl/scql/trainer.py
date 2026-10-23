@@ -1,4 +1,4 @@
-"""Double DQN Training Step for SCQL with DQfD Large-Margin Demonstration Loss."""
+"""Double DQN Training Step for SCQL with Corrected Zero-Time SMDP Bellman Targets."""
 from __future__ import annotations
 
 import copy
@@ -9,6 +9,62 @@ from torch import nn
 
 from .q_network import SCQLDuelingQNetwork
 from .replay_buffer import SCQLReplayBuffer, Transition
+
+
+def compute_ddqn_target(
+    transition: Transition,
+    online_q: SCQLDuelingQNetwork,
+    target_q: SCQLDuelingQNetwork,
+    gamma: float,
+    device: Optional[torch.device] = None,
+) -> torch.Tensor:
+    """Computes corrected two-scale Double DQN Bellman target under causal action masking.
+
+    Invariants:
+      1. Assignment transitions: reward = 0.0, discount = 1.0 (zero-time matching step)
+      2. STOP transitions: reward = transition.completed_value (simulator deadline-valid completions), discount = gamma
+      3. Terminal: omits bootstrap term
+      4. Double DQN: argmax action from online_q under action_mask, evaluated by target_q
+    """
+    if transition.kind == "assignment":
+        reward = 0.0
+        discount = 1.0
+    elif transition.kind == "stop":
+        reward = float(transition.completed_value)
+        discount = float(gamma)
+    else:
+        raise ValueError(f"Unknown transition kind: {transition.kind}")
+
+    if transition.done:
+        return torch.tensor(reward, dtype=torch.float32, device=device)
+
+    # Next partial matching: empty for STOP transition, next_partial_matching for assignment
+    next_pm = [] if transition.kind == "stop" else transition.next_partial_matching
+
+    # If no next candidates (e.g. terminal or empty epoch)
+    if not transition.next_candidates:
+        return torch.tensor(reward, dtype=torch.float32, device=device)
+
+    # Both networks evaluate only feasible next actions
+    q_next_online = online_q(
+        transition.next_candidates,
+        transition.next_history,
+        transition.next_b_rem,
+        action_mask=transition.next_action_mask,
+        partial_matching=next_pm,
+    )
+    best_a = int(torch.argmax(q_next_online).item())
+
+    q_next_target = target_q(
+        transition.next_candidates,
+        transition.next_history,
+        transition.next_b_rem,
+        action_mask=transition.next_action_mask,
+        partial_matching=next_pm,
+    )
+    next_val = q_next_target[best_a]
+
+    return reward + discount * next_val
 
 
 class SCQLTrainer:
@@ -65,46 +121,13 @@ class SCQLTrainer:
 
             # 2. Target Q-value via Double DQN
             with torch.no_grad():
-                if trans.is_stop:
-                    # Inter-epoch transition: r = 0, gamma = self.gamma
-                    if trans.done or not trans.next_candidates:
-                        y = torch.tensor(trans.reward, dtype=torch.float32, device=self.device)
-                    else:
-                        # Target next epoch with empty partial matching M = []
-                        q_next_online = self.q_net(
-                            trans.next_candidates,
-                            trans.next_history,
-                            trans.next_b_rem,
-                            action_mask=trans.next_action_mask,
-                            partial_matching=[],
-                        )
-                        best_a = int(torch.argmax(q_next_online).item())
-                        q_next_target = self.target_net(
-                            trans.next_candidates,
-                            trans.next_history,
-                            trans.next_b_rem,
-                            action_mask=trans.next_action_mask,
-                            partial_matching=[],
-                        )
-                        y = trans.reward + self.gamma * q_next_target[best_a]
-                else:
-                    # Intra-epoch sub-step transition: r = v_i, gamma = 1.0
-                    q_next_online = self.q_net(
-                        trans.next_candidates,
-                        trans.next_history,
-                        trans.next_b_rem,
-                        action_mask=trans.next_action_mask,
-                        partial_matching=trans.next_partial_matching,
-                    )
-                    best_a = int(torch.argmax(q_next_online).item())
-                    q_next_target = self.target_net(
-                        trans.next_candidates,
-                        trans.next_history,
-                        trans.next_b_rem,
-                        action_mask=trans.next_action_mask,
-                        partial_matching=trans.next_partial_matching,
-                    )
-                    y = trans.reward + q_next_target[best_a]
+                y = compute_ddqn_target(
+                    trans,
+                    online_q=self.q_net,
+                    target_q=self.target_net,
+                    gamma=self.gamma,
+                    device=self.device,
+                )
 
             delta = y - q_cur
             td_errors.append(float(delta.abs().item()))

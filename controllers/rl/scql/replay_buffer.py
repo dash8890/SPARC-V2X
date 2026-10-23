@@ -20,7 +20,7 @@ class Transition:
     b_rem: float
     partial_matching: List[CandidateEdge]
     action_idx: int  # index in [0, len(candidates)] where len(candidates) is STOP
-    reward: float    # 0 for intra-epoch; r_t for inter-epoch STOP
+    reward: float    # 0.0 for intra-epoch assignment; r_t for inter-epoch STOP
     next_candidates: List[CandidateEdge]
     next_history: torch.Tensor
     next_b_rem: float
@@ -28,6 +28,20 @@ class Transition:
     next_action_mask: List[bool]
     done: bool
     is_stop: bool
+    kind: str = "assignment"  # "assignment" or "stop"
+    completed_value: float = 0.0
+
+    def __post_init__(self):
+        if self.is_stop:
+            self.kind = "stop"
+            if self.completed_value == 0.0 and self.reward != 0.0:
+                self.completed_value = float(self.reward)
+            else:
+                self.reward = float(self.completed_value)
+        else:
+            self.kind = "assignment"
+            self.reward = 0.0
+            self.completed_value = 0.0
 
 
 class SCQLReplayBuffer:

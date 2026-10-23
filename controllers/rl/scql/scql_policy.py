@@ -63,13 +63,17 @@ class SCQLSequentialPolicy(nn.Module):
         return torch.tensor(hist_list, dtype=torch.float32).unsqueeze(0)
 
     def finalize_episode(self, final_completed: Optional[float] = None):
-        """Commits any trailing pending STOP transition at episode boundary."""
+        """Commits any trailing pending STOP transition at episode boundary with actual completion credit."""
         if self._pending_stop_trans is not None and self.buffer is not None:
-            self._pending_stop_trans.reward = 0.0
+            advance_r = 0.0
+            if final_completed is not None:
+                advance_r = max(0.0, float(final_completed) - self._last_completed_val)
+            self._pending_stop_trans.reward = advance_r
+            self._pending_stop_trans.completed_value = advance_r
             self._pending_stop_trans.done = True
             self._pending_stop_trans.next_candidates = []
             self._pending_stop_trans.next_action_mask = [True]
-            self.buffer.push(self._pending_stop_trans, priority=1.0)
+            self.buffer.push(self._pending_stop_trans, priority=max(1.0, advance_r * 2.0))
         self._pending_stop_trans = None
         self._last_completed_val = 0.0
 
@@ -115,10 +119,11 @@ class SCQLSequentialPolicy(nn.Module):
 
         # Commit pending STOP transition if active
         if self._pending_stop_trans is not None and self.buffer is not None:
-            self._pending_stop_trans.reward = 0.0
+            self._pending_stop_trans.reward = advance_reward
+            self._pending_stop_trans.completed_value = advance_reward
             self._pending_stop_trans.next_candidates = parsed_candidates
             self._pending_stop_trans.next_action_mask = init_mask
-            self.buffer.push(self._pending_stop_trans, priority=1.0)
+            self.buffer.push(self._pending_stop_trans, priority=max(1.0, advance_reward * 2.0))
             self._pending_stop_trans = None
 
         if not parsed_candidates:
@@ -217,7 +222,7 @@ class SCQLSequentialPolicy(nn.Module):
                         b_rem=b_rem,
                         partial_matching=list(partial_matching),
                         action_idx=chosen_action,
-                        reward=float(selected_edge.task_value),
+                        reward=0.0,
                         next_candidates=parsed_candidates,
                         next_history=history_t,
                         next_b_rem=next_b_rem,
@@ -226,7 +231,7 @@ class SCQLSequentialPolicy(nn.Module):
                         done=False,
                         is_stop=False,
                     )
-                    self.buffer.push(trans_intra, priority=max(1.0, float(selected_edge.task_value)))
+                    self.buffer.push(trans_intra, priority=1.0)
 
                 partial_matching = next_partial
                 b_rem = next_b_rem
