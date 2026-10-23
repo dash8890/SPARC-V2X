@@ -26,7 +26,30 @@ def compute_ddqn_target(
       3. Terminal: omits bootstrap term
       4. Double DQN: argmax action from online_q under action_mask, evaluated by target_q
     """
-    if transition.kind == "assignment":
+    if transition.kind == "matching":
+        reward = float(transition.completed_value if transition.completed_value != 0.0 else transition.reward)
+        if transition.done:
+            return torch.tensor(reward, dtype=torch.float32, device=device)
+
+        matchings = transition.next_matchings or []
+        b_rems = transition.next_b_rems or [175000.0] * len(matchings)
+        if not matchings or transition.next_history is None:
+            return torch.tensor(reward, dtype=torch.float32, device=device)
+
+        # Double DQN: online_q selects argmax matching from \mathcal{N}(s_{t+1})
+        q_online_vals = [
+            online_q.evaluate_matching(m, transition.next_history, b_rem=br)
+            for m, br in zip(matchings, b_rems)
+        ]
+        best_idx = int(torch.argmax(torch.stack(q_online_vals)).item())
+
+        # target_q evaluates the selected matching
+        best_m = matchings[best_idx]
+        best_br = b_rems[best_idx]
+        q_target = target_q.evaluate_matching(best_m, transition.next_history, b_rem=best_br)
+        return reward + gamma * q_target
+
+    elif transition.kind == "assignment":
         reward = 0.0
         discount = 1.0
     elif transition.kind == "stop":
@@ -111,13 +134,20 @@ class SCQLTrainer:
 
         for trans, is_w in zip(samples, is_weights):
             # 1. Current Q-value
-            q_cur_all = self.q_net(
-                trans.candidates,
-                trans.history,
-                trans.b_rem,
-                partial_matching=trans.partial_matching,
-            )
-            q_cur = q_cur_all[trans.action_idx]
+            if trans.kind == "matching":
+                q_cur = self.q_net.evaluate_matching(
+                    trans.partial_matching,
+                    trans.history,
+                    b_rem=trans.b_rem,
+                )
+            else:
+                q_cur_all = self.q_net(
+                    trans.candidates,
+                    trans.history,
+                    trans.b_rem,
+                    partial_matching=trans.partial_matching,
+                )
+                q_cur = q_cur_all[trans.action_idx]
 
             # 2. Target Q-value via Double DQN
             with torch.no_grad():
@@ -135,17 +165,7 @@ class SCQLTrainer:
             # Huber loss on TD error
             huber = nn.functional.smooth_l1_loss(q_cur, y, reduction="none")
 
-            # DQfD Large-Margin loss on demonstrations
-            m_loss = torch.tensor(0.0, device=self.device)
-            if lambda_margin > 0.0 and len(q_cur_all) > 1:
-                expert_a = trans.action_idx
-                q_adj = q_cur_all + self.margin_delta
-                q_adj[expert_a] = q_cur_all[expert_a]
-                max_adj = torch.max(q_adj)
-                m_loss = nn.functional.relu(max_adj - q_cur_all[expert_a])
-                margin_losses.append(float(m_loss.item()))
-
-            total_sample_loss = is_w * huber + lambda_margin * m_loss
+            total_sample_loss = is_w * huber
             losses.append(total_sample_loss)
 
         total_loss = torch.stack(losses).mean()

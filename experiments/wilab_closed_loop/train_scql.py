@@ -181,9 +181,9 @@ def train_scql(
     print("=" * 70)
     for step in range(1, warm_start_steps + 1):
         beta = 0.4 + 0.6 * (step / warm_start_steps)
-        metrics = trainer.train_step(batch_size=batch_size, beta=beta, lambda_margin=1.0)
+        metrics = trainer.train_step(batch_size=batch_size, beta=beta)
         if step % 50 == 0 or step == warm_start_steps:
-            print(f"  Step {step:03d}/{warm_start_steps}: Loss = {metrics['loss']:.4f} | TD Err = {metrics['td_error_mean']:.4f} | Margin = {metrics['margin_loss']:.4f} | Grad = {metrics['grad_norm']:.4f}")
+            print(f"  Step {step:03d}/{warm_start_steps}: Loss = {metrics['loss']:.4f} | TD Err = {metrics['td_error_mean']:.4f} | Grad = {metrics['grad_norm']:.4f}")
 
     # Save initial warm checkpoint
     warm_ckpt_path = checkpoints_dir / "scql_warm_start.pt"
@@ -211,7 +211,7 @@ def train_scql(
         # Train multiple batches after episode
         losses = []
         for _ in range(25):
-            m = trainer.train_step(batch_size=batch_size, beta=0.6, lambda_margin=0.2)
+            m = trainer.train_step(batch_size=batch_size, beta=0.6)
             losses.append(m["loss"])
 
         print(f"  Episode {ep:02d} (Seed {seed}, eps={eps:.3f}): V = {comp:.2f} | P_viol = {pv*100:.2f}% | Buffer: {len(buffer)} | Mean Loss: {np.mean(losses):.4f}")

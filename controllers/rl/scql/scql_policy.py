@@ -24,6 +24,7 @@ class SCQLSequentialPolicy(nn.Module):
         b_max: int = 175000,
         r_thresh: float = 0.20,
         epsilon: float = 0.0,
+        delta: float = 0.0,
         history_len: int = 10,
         buffer: Optional[SCQLReplayBuffer] = None,
         expert_mode: str = "rl",
@@ -33,6 +34,7 @@ class SCQLSequentialPolicy(nn.Module):
         self.b_max = int(b_max)
         self.r_thresh = float(r_thresh)
         self.epsilon = float(epsilon)
+        self.delta = float(delta)  # Advantage threshold for overriding reference matching
         self.history_len = int(history_len)
         self.buffer = buffer
         self.expert_mode = expert_mode  # "rl" or "guarded_b4"
@@ -45,8 +47,8 @@ class SCQLSequentialPolicy(nn.Module):
         self._history = collections.deque(maxlen=history_len)
         self._init_history()
 
-        # SMDP Transition logging state
-        self._pending_stop_trans: Optional[Transition] = None
+        # Finite-horizon matching transition tracking
+        self._pending_trans: Optional[Transition] = None
         self._last_completed_val: float = 0.0
 
     def _init_history(self):
@@ -63,19 +65,130 @@ class SCQLSequentialPolicy(nn.Module):
         return torch.tensor(hist_list, dtype=torch.float32).unsqueeze(0)
 
     def finalize_episode(self, final_completed: Optional[float] = None):
-        """Commits any trailing pending STOP transition at episode boundary with actual completion credit."""
-        if self._pending_stop_trans is not None and self.buffer is not None:
+        """Commits any trailing pending matching transition at episode boundary with actual completion credit."""
+        if self._pending_trans is not None and self.buffer is not None:
             advance_r = 0.0
             if final_completed is not None:
                 advance_r = max(0.0, float(final_completed) - self._last_completed_val)
-            self._pending_stop_trans.reward = advance_r
-            self._pending_stop_trans.completed_value = advance_r
-            self._pending_stop_trans.done = True
-            self._pending_stop_trans.next_candidates = []
-            self._pending_stop_trans.next_action_mask = [True]
-            self.buffer.push(self._pending_stop_trans, priority=max(1.0, advance_r * 2.0))
-        self._pending_stop_trans = None
+            self._pending_trans.reward = advance_r
+            self._pending_trans.completed_value = advance_r
+            self._pending_trans.done = True
+            self._pending_trans.next_candidates = []
+            self._pending_trans.next_matchings = []
+            self._pending_trans.next_b_rems = []
+            self.buffer.push(self._pending_trans, priority=max(1.0, advance_r * 2.0))
+        self._pending_trans = None
         self._last_completed_val = 0.0
+
+    def _build_reference_matching(
+        self,
+        candidates: Sequence[CandidateEdge],
+        b_max: float,
+        unique_sources: bool = True,
+        unique_helpers: bool = True,
+    ) -> Tuple[List[CandidateEdge], float]:
+        """Constructs a complete feasible reference matching M_B via greedy value-density knapsack."""
+        # Sort candidates descending by value density v_i / b_i
+        sorted_cands = sorted(
+            candidates,
+            key=lambda c: c.task_value / max(1.0, c.payload_bytes / 1000.0),
+            reverse=True,
+        )
+        matching: List[CandidateEdge] = []
+        b_rem = float(b_max)
+        assigned_tasks = set()
+        assigned_sources = set()
+        assigned_helpers = set()
+
+        for c in sorted_cands:
+            if c.payload_bytes > b_rem:
+                continue
+            if c.task_id in assigned_tasks:
+                continue
+            if unique_sources and c.source_id in assigned_sources:
+                continue
+            if unique_helpers and c.helper_id in assigned_helpers:
+                continue
+
+            matching.append(c)
+            b_rem -= float(c.payload_bytes)
+            assigned_tasks.add(c.task_id)
+            if unique_sources:
+                assigned_sources.add(c.source_id)
+            if unique_helpers:
+                assigned_helpers.add(c.helper_id)
+
+        return matching, b_rem
+
+    def _build_alternative_matching(
+        self,
+        candidates: Sequence[CandidateEdge],
+        b_max: float,
+        history_t: torch.Tensor,
+        unique_sources: bool = True,
+        unique_helpers: bool = True,
+    ) -> Tuple[List[CandidateEdge], float]:
+        """Constructs a candidate alternative matching M_R, selecting the matching prefix
+
+        that maximizes predicted long-term completed value Q_theta(s, M), including the
+        option to leave resources unused if further assignments are predicted harmful.
+        """
+        # 1. Sequentially order candidate assignments using edge advantage
+        ordered_edges: List[CandidateEdge] = []
+        b_rem_track: List[float] = [float(b_max)]
+        cur_brem = float(b_max)
+        assigned_tasks = set()
+        assigned_sources = set()
+        assigned_helpers = set()
+
+        while True:
+            feasible = [
+                c for c in candidates
+                if c.payload_bytes <= cur_brem
+                and c.task_id not in assigned_tasks
+                and (not unique_sources or c.source_id not in assigned_sources)
+                and (not unique_helpers or c.helper_id not in assigned_helpers)
+            ]
+            if not feasible:
+                break
+
+            with torch.no_grad():
+                scores = self.q_net.score_candidate_edges(
+                    feasible, history_t, partial_matching=ordered_edges, b_rem=cur_brem, b_max=b_max
+                )
+                if scores.numel() > 0:
+                    best_idx = int(torch.argmax(scores).item())
+                    best_edge = feasible[best_idx]
+                else:
+                    best_edge = feasible[0]
+
+            ordered_edges.append(best_edge)
+            cur_brem -= float(best_edge.payload_bytes)
+            b_rem_track.append(cur_brem)
+            assigned_tasks.add(best_edge.task_id)
+            if unique_sources:
+                assigned_sources.add(best_edge.source_id)
+            if unique_helpers:
+                assigned_helpers.add(best_edge.helper_id)
+
+        # 2. Evaluate all candidate prefixes M^(0), M^(1), ..., M^(K)
+        # Prefix k represents admitting the first k assignments and leaving remaining resources unused.
+        prefix_q_vals = []
+        for k in range(len(ordered_edges) + 1):
+            sub_m = ordered_edges[:k]
+            sub_brem = b_rem_track[k]
+            with torch.no_grad():
+                q_val = float(self.q_net.evaluate_matching(
+                    sub_m, history_t, b_rem=sub_brem, b_max=b_max
+                ).item())
+            prefix_q_vals.append(q_val)
+
+        # Select prefix that maximizes predicted long-term return Q_theta(s, M)
+        best_k = int(np.argmax(prefix_q_vals))
+        best_matching = ordered_edges[:best_k]
+        best_b_rem = b_rem_track[best_k]
+
+        return best_matching, best_b_rem
 
     def _sequential_match(
         self,
@@ -88,8 +201,8 @@ class SCQLSequentialPolicy(nn.Module):
         layer: Any = None,
         deterministic: bool = True,
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
-        """Constructs a matching sequentially one edge at a time using Q-values or expert heuristic."""
-        # 1. Update reward for pending STOP transition from previous epoch
+        """Constructs complete reference M_B and alternative M_R, selecting M* via learned advantage Delta_theta > delta."""
+        # 1. Update reward from actual simulator completions
         if layer is not None and hasattr(layer, "completed_value"):
             cur_comp = float(layer.completed_value())
             advance_reward = max(0.0, cur_comp - self._last_completed_val)
@@ -99,174 +212,114 @@ class SCQLSequentialPolicy(nn.Module):
 
         from controllers.rl.causal_safety_guard import filter_candidates_causal_guard
 
+        # Causal safety guard applies identically to both matchings
         filtered, rej, eff_b = filter_candidates_causal_guard(
             candidates, layer=layer, r_thresh=self.r_thresh, b_max=b_max
         )
         eff_b_max = min(eff_b, int(self.b_max * float(beta_throttle)))
-        b_rem = float(eff_b_max)
-
-        # Parse candidates
         parsed_candidates = [candidate_from_dict(c) for c in filtered]
 
-        # Initial mask at epoch start
-        init_mask, _ = build_admissible_action_mask(
-            parsed_candidates,
-            [],
-            b_rem=b_rem,
-            cbr=0.04,
-            r_thresh=self.r_thresh,
-        )
-
-        # Commit pending STOP transition if active
-        if self._pending_stop_trans is not None and self.buffer is not None:
-            self._pending_stop_trans.reward = advance_reward
-            self._pending_stop_trans.completed_value = advance_reward
-            self._pending_stop_trans.next_candidates = parsed_candidates
-            self._pending_stop_trans.next_action_mask = init_mask
-            self.buffer.push(self._pending_stop_trans, priority=max(1.0, advance_reward * 2.0))
-            self._pending_stop_trans = None
-
-        if not parsed_candidates:
-            return [], {
-                "n_pack": 0, "bytes": 0, "b_limit": eff_b_max, "b_rem": b_rem,
-                "sub_steps": 0, "q_history": [], "policy_mode": "scql", "rejected_geometry": rej,
-            }
-
-        partial_matching: List[CandidateEdge] = []
-        sub_steps = 0
-        q_history = []
-        max_substeps = min(len(parsed_candidates), 12)
+        # Update arrival rate and trailing history
+        tot_arr_v = sum(c.task_value for c in parsed_candidates) if parsed_candidates else 0.0
+        tot_arr_b = sum(c.payload_bytes for c in parsed_candidates) if parsed_candidates else 0.0
+        mean_q = float(np.mean([c.queue_cycles / 1e8 for c in parsed_candidates])) if parsed_candidates else 0.0
+        self.update_history(cbr=0.04, offered_v=tot_arr_v, offered_b=tot_arr_b, mean_q=mean_q)
         history_t = self.get_history_tensor()
 
+        if not parsed_candidates:
+            # Empty candidate set
+            if self._pending_trans is not None and self.buffer is not None:
+                self._pending_trans.reward = advance_reward
+                self._pending_trans.completed_value = advance_reward
+                self._pending_trans.next_candidates = []
+                self._pending_trans.next_matchings = [[]]
+                self._pending_trans.next_b_rems = [float(eff_b_max)]
+                self._pending_trans.next_history = history_t
+                self.buffer.push(self._pending_trans, priority=max(1.0, advance_reward * 2.0))
+                self._pending_trans = None
+
+            return [], {
+                "n_pack": 0, "bytes": 0, "b_limit": eff_b_max, "b_rem": float(eff_b_max),
+                "q_diff": 0.0, "selected_mode": "empty", "policy_mode": "scql", "rejected_geometry": rej,
+            }
+
+        # 2. Build complete feasible reference matching M_B
+        m_b, b_rem_b = self._build_reference_matching(
+            parsed_candidates, b_max=float(eff_b_max), unique_sources=unique_sources, unique_helpers=unique_helpers
+        )
+
+        # 3. Build complete feasible alternative matching M_R without premature STOP
+        m_r, b_rem_r = self._build_alternative_matching(
+            parsed_candidates, b_max=float(eff_b_max), history_t=history_t, unique_sources=unique_sources, unique_helpers=unique_helpers
+        )
+
+        # 4. Evaluate complete matchings and compute advantage Delta_theta(s, M_R, M_B)
         self.q_net.eval()
         with torch.no_grad():
-            while sub_steps < max_substeps:
-                sub_steps += 1
-                mask, _ = build_admissible_action_mask(
-                    parsed_candidates,
-                    partial_matching,
-                    b_rem=b_rem,
-                    cbr=0.04,
-                    r_thresh=self.r_thresh,
-                )
+            q_b = float(self.q_net.evaluate_matching(m_b, history_t, b_rem=b_rem_b, b_max=float(eff_b_max)).item())
+            q_r = float(self.q_net.evaluate_matching(m_r, history_t, b_rem=b_rem_r, b_max=float(eff_b_max)).item())
+            delta_theta = q_r - q_b
 
-                admissible_indices = [idx for idx, ok in enumerate(mask) if ok]
-                stop_idx = len(parsed_candidates)
+        # 5. Selection rule: M* = M_R if Delta_theta > delta, else M_B
+        if self.expert_mode == "guarded_b4":
+            selected_matching = m_b
+            selected_b_rem = b_rem_b
+            sel_mode = "reference_b4"
+        else:
+            if delta_theta > self.delta:
+                selected_matching = m_r
+                selected_b_rem = b_rem_r
+                sel_mode = "scql_alternative"
+            else:
+                selected_matching = m_b
+                selected_b_rem = b_rem_b
+                sel_mode = "reference_b4"
 
-                if not admissible_indices or admissible_indices == [stop_idx]:
-                    # Only STOP or nothing is admissible
-                    chosen_action = stop_idx
-                elif self.expert_mode == "guarded_b4":
-                    # Guarded B4 expert heuristic: max value density
-                    cand_admissible = [i for i in admissible_indices if i < stop_idx]
-                    if cand_admissible:
-                        chosen_action = max(
-                            cand_admissible,
-                            key=lambda i: parsed_candidates[i].task_value / (parsed_candidates[i].payload_bytes / 1000.0),
-                        )
-                    else:
-                        chosen_action = stop_idx
-                else:
-                    # SCQL RL policy
-                    q_vals = self.q_net(
-                        parsed_candidates,
-                        history_t,
-                        b_rem=b_rem,
-                        action_mask=mask,
-                        partial_matching=partial_matching,
-                        b_max=eff_b_max,
-                    )
-                    if not deterministic and np.random.rand() < self.epsilon:
-                        chosen_action = int(np.random.choice(admissible_indices))
-                    else:
-                        chosen_action = int(torch.argmax(q_vals).item())
+        # 6. Commit pending matching transition with actual completion reward
+        if self._pending_trans is not None and self.buffer is not None:
+            self._pending_trans.reward = advance_reward
+            self._pending_trans.completed_value = advance_reward
+            self._pending_trans.next_candidates = parsed_candidates
+            self._pending_trans.next_matchings = [m_b, m_r]
+            self._pending_trans.next_b_rems = [b_rem_b, b_rem_r]
+            self._pending_trans.next_history = history_t
+            self.buffer.push(self._pending_trans, priority=max(1.0, advance_reward * 2.0))
+            self._pending_trans = None
 
-                # If STOP action selected
-                if chosen_action == stop_idx:
-                    q_history.append(("STOP", 0.0))
-                    if self.record_transitions and self.buffer is not None:
-                        self._pending_stop_trans = Transition(
-                            candidates=parsed_candidates,
-                            history=history_t,
-                            b_rem=b_rem,
-                            partial_matching=list(partial_matching),
-                            action_idx=stop_idx,
-                            reward=0.0,  # will be populated on next epoch advance
-                            next_candidates=[],
-                            next_history=history_t,
-                            next_b_rem=float(self.b_max),
-                            next_partial_matching=[],
-                            next_action_mask=[True],
-                            done=False,
-                            is_stop=True,
-                        )
-                    break
+        # 7. Start new pending transition for current decision
+        if self.record_transitions and self.buffer is not None:
+            self._pending_trans = Transition(
+                candidates=parsed_candidates,
+                history=history_t,
+                b_rem=selected_b_rem,
+                partial_matching=list(selected_matching),
+                action_idx=0,
+                reward=0.0,  # credited on next epoch advance
+                next_candidates=[],
+                next_history=history_t,
+                next_b_rem=float(self.b_max),
+                next_partial_matching=[],
+                next_action_mask=[True],
+                done=False,
+                is_stop=True,
+                kind="matching",
+                next_matchings=[],
+                next_b_rems=[],
+                delta_adv=delta_theta,
+            )
 
-                # Valid candidate edge chosen
-                selected_edge = parsed_candidates[chosen_action]
-                next_partial = partial_matching + [selected_edge]
-                next_b_rem = b_rem - float(selected_edge.payload_bytes)
-
-                next_mask, _ = build_admissible_action_mask(
-                    parsed_candidates,
-                    next_partial,
-                    b_rem=next_b_rem,
-                    cbr=0.04,
-                    r_thresh=self.r_thresh,
-                )
-
-                if self.record_transitions and self.buffer is not None:
-                    trans_intra = Transition(
-                        candidates=parsed_candidates,
-                        history=history_t,
-                        b_rem=b_rem,
-                        partial_matching=list(partial_matching),
-                        action_idx=chosen_action,
-                        reward=0.0,
-                        next_candidates=parsed_candidates,
-                        next_history=history_t,
-                        next_b_rem=next_b_rem,
-                        next_partial_matching=list(next_partial),
-                        next_action_mask=next_mask,
-                        done=False,
-                        is_stop=False,
-                    )
-                    self.buffer.push(trans_intra, priority=1.0)
-
-                partial_matching = next_partial
-                b_rem = next_b_rem
-                q_history.append((selected_edge.task_id, selected_edge.helper_id, 0.0))
-
-                if b_rem <= 0:
-                    # Budget filled; implicit STOP
-                    if self.record_transitions and self.buffer is not None:
-                        self._pending_stop_trans = Transition(
-                            candidates=parsed_candidates,
-                            history=history_t,
-                            b_rem=b_rem,
-                            partial_matching=list(partial_matching),
-                            action_idx=stop_idx,
-                            reward=0.0,
-                            next_candidates=[],
-                            next_history=history_t,
-                            next_b_rem=float(self.b_max),
-                            next_partial_matching=[],
-                            next_action_mask=[True],
-                            done=False,
-                            is_stop=True,
-                        )
-                    break
-
-        pack = [m.raw_dict for m in partial_matching]
+        pack = [m.raw_dict for m in selected_matching]
         total_bytes = sum(int(a.get("payload_bytes", 0)) for a in pack)
 
         meta = {
             "n_pack": len(pack),
             "bytes": total_bytes,
             "b_limit": eff_b_max,
-            "b_rem": b_rem,
-            "sub_steps": sub_steps,
-            "q_history": q_history,
+            "b_rem": selected_b_rem,
+            "q_b": q_b,
+            "q_r": q_r,
+            "delta_theta": delta_theta,
+            "selected_mode": sel_mode,
             "policy_mode": "scql",
             "rejected_geometry": rej,
         }

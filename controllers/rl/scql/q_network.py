@@ -131,29 +131,36 @@ class SCQLDuelingQNetwork(nn.Module):
             ], dtype=torch.float32, device=device).unsqueeze(0)
             h_t = self.task_encoder(t_feat)
 
-            # Helper features: [f_norm, q_norm, t_avail, dist_norm, risk, rel_v, rel_v]
+            # Helper features (dim 7) directly observing capacity opportunity cost:
+            # 1. Remaining queued computation: c.queue_cycles / 1e8
+            # 2. Estimated release time: c.t_release_s / 10.0
+            # 3. Remaining contact duration: c.t_contact_sec / 100.0
+            # 4. Current tasks feasibly competing for helper: c.competing_tasks / 10.0
+            # 5. Total value of competing tasks: c.competing_value / 25.0
+            # 6. Future processing capacity remaining post-assignment: c.post_slack_sec / 100.0
+            # 7. Helper CPU compute speed: c.cpu_cycles_s / 1e9
             h_feat = torch.tensor([
-                1.0,  # normalized CPU
-                c.occ_cost,
-                c.lat_pressure,
-                float(c.features[0]) if len(c.features) > 0 else 0.0,
-                c.risk,
-                float(c.features[4]) if len(c.features) > 4 else 0.0,
-                float(c.features[5]) if len(c.features) > 5 else 0.0,
+                c.queue_cycles / 1e8,
+                min(1.0, c.t_release_s / 10.0),
+                min(1.0, c.t_contact_sec / 100.0),
+                min(1.0, float(c.competing_tasks) / 10.0),
+                min(1.0, float(c.competing_value) / 25.0),
+                min(1.0, c.post_slack_sec / 100.0),
+                c.cpu_cycles_s / 1e9,
             ], dtype=torch.float32, device=device).unsqueeze(0)
             h_h = self.helper_encoder(h_feat)
 
-            # Raw edge features
+            # Raw edge features (dim 10)
             raw_edge = torch.tensor([
                 c.task_value / 5.0,
                 c.deadline_ms / 1000.0,
                 c.payload_bytes / 175000.0,
                 c.cycles / 1e9,
                 c.finish_ms / 1000.0,
-                c.t_contact_sec / 100.0,
-                c.lat_pressure,
+                min(1.0, c.t_contact_sec / 100.0),
+                min(1.0, c.post_slack_sec / 100.0),
                 c.occ_cost,
-                c.rad_footprint,
+                c.lat_pressure,
                 c.risk,
             ], dtype=torch.float32, device=device).unsqueeze(0)
 
@@ -175,11 +182,19 @@ class SCQLDuelingQNetwork(nn.Module):
                     pm.task_value / 5.0, pm.deadline_ms / 1000.0, pm.payload_bytes / 175000.0,
                     pm.cycles / 1e9, 0.0
                 ], dtype=torch.float32, device=device).unsqueeze(0)
-                h_feat = torch.tensor([1.0, pm.occ_cost, pm.lat_pressure, 0.0, pm.risk, 0.0, 0.0], dtype=torch.float32, device=device).unsqueeze(0)
+                h_feat = torch.tensor([
+                    pm.queue_cycles / 1e8,
+                    min(1.0, pm.t_release_s / 10.0),
+                    min(1.0, pm.t_contact_sec / 100.0),
+                    min(1.0, float(pm.competing_tasks) / 10.0),
+                    min(1.0, float(pm.competing_value) / 25.0),
+                    min(1.0, pm.post_slack_sec / 100.0),
+                    pm.cpu_cycles_s / 1e9,
+                ], dtype=torch.float32, device=device).unsqueeze(0)
                 raw = torch.tensor([
                     pm.task_value / 5.0, pm.deadline_ms / 1000.0, pm.payload_bytes / 175000.0,
-                    pm.cycles / 1e9, pm.finish_ms / 1000.0, pm.t_contact_sec / 100.0,
-                    pm.lat_pressure, pm.occ_cost, pm.rad_footprint, pm.risk
+                    pm.cycles / 1e9, pm.finish_ms / 1000.0, min(1.0, pm.t_contact_sec / 100.0),
+                    min(1.0, pm.post_slack_sec / 100.0), pm.occ_cost, pm.lat_pressure, pm.risk
                 ], dtype=torch.float32, device=device).unsqueeze(0)
                 u_pm = self.edge_encoder(torch.cat([self.task_encoder(t_feat), self.helper_encoder(h_feat), h_r, raw], dim=-1))
                 m_embeds.append(self.partial_match_proj(u_pm))
@@ -244,3 +259,69 @@ class SCQLDuelingQNetwork(nn.Module):
             q_values = val + (adv_all - adv_all.mean())
 
         return q_values
+
+    def evaluate_matching(
+        self,
+        matching: Sequence[CandidateEdge],
+        history: torch.Tensor,
+        b_rem: float,
+        b_max: float = 175000.0,
+    ) -> torch.Tensor:
+        """Evaluates Q_theta(s, M) for a complete proposed matching M and its resulting resource commitments."""
+        device = next(self.parameters()).device
+        if history.dim() == 2:
+            history = history.unsqueeze(0)
+        history = history.to(device)
+        _, h_gru = self.history_gru(history)
+        h_r = h_gru[-1]  # (1, hidden_dim)
+
+        if matching and len(matching) > 0:
+            m_embeds = []
+            for pm in matching:
+                t_feat = torch.tensor([
+                    pm.task_value / 5.0, pm.deadline_ms / 1000.0, pm.payload_bytes / 175000.0,
+                    pm.cycles / 1e9, 0.0
+                ], dtype=torch.float32, device=device).unsqueeze(0)
+                h_feat = torch.tensor([
+                    pm.queue_cycles / 1e8,
+                    min(1.0, pm.t_release_s / 10.0),
+                    min(1.0, pm.t_contact_sec / 100.0),
+                    min(1.0, float(pm.competing_tasks) / 10.0),
+                    min(1.0, float(pm.competing_value) / 25.0),
+                    min(1.0, pm.post_slack_sec / 100.0),
+                    pm.cpu_cycles_s / 1e9,
+                ], dtype=torch.float32, device=device).unsqueeze(0)
+                raw = torch.tensor([
+                    pm.task_value / 5.0, pm.deadline_ms / 1000.0, pm.payload_bytes / 175000.0,
+                    pm.cycles / 1e9, pm.finish_ms / 1000.0, min(1.0, pm.t_contact_sec / 100.0),
+                    min(1.0, pm.post_slack_sec / 100.0), pm.occ_cost, pm.lat_pressure, pm.risk
+                ], dtype=torch.float32, device=device).unsqueeze(0)
+                u_pm = self.edge_encoder(torch.cat([self.task_encoder(t_feat), self.helper_encoder(h_feat), h_r, raw], dim=-1))
+                m_embeds.append(self.partial_match_proj(u_pm))
+            m_t = torch.stack(m_embeds).sum(dim=0)
+        else:
+            m_t = torch.zeros(1, self.hidden_dim, device=device)
+
+        b_norm = torch.tensor([[float(b_rem) / float(b_max)]], dtype=torch.float32, device=device)
+        joint_in = torch.cat([h_r, m_t, b_norm], dim=-1)
+        s_joint = self.joint_trunk(joint_in)
+        return self.v_head(s_joint).squeeze()
+
+    def score_candidate_edges(
+        self,
+        candidates: Sequence[CandidateEdge],
+        history: torch.Tensor,
+        partial_matching: Sequence[CandidateEdge],
+        b_rem: float,
+        b_max: float = 175000.0,
+    ) -> torch.Tensor:
+        """Scores candidate edges for sequential construction of alternative matching M_R."""
+        u_tensor, s_joint, _ = self.extract_features(
+            candidates, history, b_rem, b_max=b_max, partial_matching=partial_matching,
+        )
+        n_cands = len(candidates)
+        if n_cands == 0:
+            return torch.empty(0, device=next(self.parameters()).device)
+        s_expanded = s_joint.expand(n_cands, -1)
+        pair_in = torch.cat([s_expanded, u_tensor], dim=-1)
+        return self.a_edge_head(pair_in).squeeze(-1)

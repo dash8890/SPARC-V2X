@@ -18,30 +18,49 @@ class Transition:
     candidates: List[CandidateEdge]
     history: torch.Tensor
     b_rem: float
-    partial_matching: List[CandidateEdge]
-    action_idx: int  # index in [0, len(candidates)] where len(candidates) is STOP
-    reward: float    # 0.0 for intra-epoch assignment; r_t for inter-epoch STOP
-    next_candidates: List[CandidateEdge]
-    next_history: torch.Tensor
-    next_b_rem: float
-    next_partial_matching: List[CandidateEdge]
-    next_action_mask: List[bool]
-    done: bool
-    is_stop: bool
-    kind: str = "assignment"  # "assignment" or "stop"
+    partial_matching: List[CandidateEdge]  # represents the chosen matching M^*
+    action_idx: int = 0  # index in [0, len(candidates)] where len(candidates) is STOP
+    reward: float = 0.0    # actual deadline-valid completed value r_t
+    next_candidates: Optional[List[CandidateEdge]] = None
+    next_history: Optional[torch.Tensor] = None
+    next_b_rem: float = 175000.0
+    next_partial_matching: Optional[List[CandidateEdge]] = None
+    next_action_mask: Optional[List[bool]] = None
+    done: bool = False
+    is_stop: bool = True
+    kind: str = "assignment"  # "matching", "assignment", or "stop"
     completed_value: float = 0.0
+    next_matchings: Optional[List[List[CandidateEdge]]] = None  # \mathcal{N}(s_{t+1})
+    next_b_rems: Optional[List[float]] = None
+    delta_adv: float = 0.0
 
     def __post_init__(self):
-        if self.is_stop:
+        if self.next_candidates is None:
+            self.next_candidates = []
+        if self.next_partial_matching is None:
+            self.next_partial_matching = []
+        if self.next_action_mask is None:
+            self.next_action_mask = [True]
+        if self.next_matchings is None:
+            self.next_matchings = []
+        if self.next_b_rems is None:
+            self.next_b_rems = []
+
+        if not self.is_stop:
+            self.kind = "assignment"
+            self.reward = 0.0
+            self.completed_value = 0.0
+        elif self.kind == "matching":
+            if self.completed_value == 0.0 and self.reward != 0.0:
+                self.completed_value = float(self.reward)
+            else:
+                self.reward = float(self.completed_value)
+        elif self.is_stop or self.kind == "stop":
             self.kind = "stop"
             if self.completed_value == 0.0 and self.reward != 0.0:
                 self.completed_value = float(self.reward)
             else:
                 self.reward = float(self.completed_value)
-        else:
-            self.kind = "assignment"
-            self.reward = 0.0
-            self.completed_value = 0.0
 
 
 class SCQLReplayBuffer:

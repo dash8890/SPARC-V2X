@@ -31,6 +31,7 @@ checkpoints/*
 !checkpoints/structured_priority_best.pt
 !checkpoints/scql_best.pt
 !checkpoints/scql_warm_start.pt
+!checkpoints/sc_rlgmi_best.pt
 *.ipynb
 
 # Legacy superseded experimental modules (untracked)
@@ -46,6 +47,7 @@ tests/*
 !tests/test_replay_determinism.py
 !tests/test_counterfactual_preference_loss.py
 !tests/test_scql_architecture.py
+!tests/test_sc_rlgmi.py
 analysis/
 mobility/
 

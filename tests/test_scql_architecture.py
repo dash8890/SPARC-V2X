@@ -13,10 +13,10 @@ from controllers.rl.scql.q_network import SCQLDuelingQNetwork
 from controllers.rl.scql.scql_policy import SCQLSequentialPolicy
 
 
-def mock_candidate(task_id: int, helper_id: int, payload_bytes: int, risk: float, value: float = 3.0) -> CandidateEdge:
+def mock_candidate(task_id: int, helper_id: int, payload_bytes: int, risk: float, value: float = 3.0, source_id: int = 0) -> CandidateEdge:
     raw = {
         "task_id": task_id,
-        "source_id": 0,
+        "source_id": source_id,
         "helper_id": helper_id,
         "payload_bytes": payload_bytes,
         "packet_count": max(1, payload_bytes // 1000),
@@ -34,7 +34,7 @@ def mock_candidate(task_id: int, helper_id: int, payload_bytes: int, risk: float
     }
     return CandidateEdge(
         task_id=task_id,
-        source_id=0,
+        source_id=source_id,
         helper_id=helper_id,
         payload_bytes=payload_bytes,
         packet_count=max(1, payload_bytes // 1000),
@@ -362,5 +362,107 @@ def test_task_layer_completion_timing_invariants():
 
     # Acceptance condition: episodic training return identically matches simulator V_done
     assert sum(epoch_rewards.values()) == pytest.approx(layer.completed_value(), abs=1e-5)
+
+
+def test_complete_matching_advantage_rule_and_target():
+    r"""Verifies complete matching advantage control rule and finite-horizon learning target:
+    1. Action construction builds complete feasible alternative matchings without premature STOP
+    2. Value network evaluates full proposed matchings Q(s, M)
+    3. Policy selection: M* = M_R if Delta_theta > delta else M_B
+    4. Target: y_t = r_t + max_{M' \in N(s_{t+1})} Q_target(s_{t+1}, M')
+    """
+    from controllers.rl.scql.trainer import compute_ddqn_target
+    from controllers.rl.scql.replay_buffer import Transition
+
+    policy = SCQLSequentialPolicy(b_max=175000, r_thresh=0.20, delta=0.5)
+    policy.eval()
+
+    c1 = mock_candidate(task_id=1, helper_id=1, payload_bytes=30000, risk=0.05, value=4.0, source_id=1)
+    c2 = mock_candidate(task_id=2, helper_id=2, payload_bytes=40000, risk=0.08, value=5.0, source_id=2)
+    c3 = mock_candidate(task_id=3, helper_id=3, payload_bytes=35000, risk=0.06, value=3.5, source_id=3)
+    candidates = [c1, c2, c3]
+    history = torch.randn(1, 10, 4)
+
+    # 1. Reference matching M_B is built completely
+    m_b, b_rem_b = policy._build_reference_matching(candidates, b_max=175000.0)
+    assert len(m_b) == 3, "Reference matching must admit all 3 feasible candidates without premature STOP"
+    assert b_rem_b == 175000.0 - (30000 + 40000 + 35000)
+
+    # 2. Alternative matching M_R is built as a complete candidate prefix (including option to leave resources unused)
+    m_r, b_rem_r = policy._build_alternative_matching(candidates, b_max=175000.0, history_t=history)
+    assert isinstance(m_r, list) and 0 <= len(m_r) <= 3, "Alternative matching must be a valid candidate matching prefix"
+
+    # 3. Value network evaluates full matching
+    q_b = policy.q_net.evaluate_matching(m_b, history, b_rem=b_rem_b)
+    q_r = policy.q_net.evaluate_matching(m_r, history, b_rem=b_rem_r)
+    assert torch.isfinite(q_b)
+    assert torch.isfinite(q_r)
+
+    # 4. Advantage control rule: Delta_theta = Q_R - Q_B
+    delta_theta = float((q_r - q_b).item())
+    # If delta_theta <= delta (0.5), policy must retain M_B
+    # If delta_theta > delta, policy selects M_R
+    # Test closed-loop execution of policy._sequential_match
+    class MockLayer:
+        current_epoch = 10
+
+    cand_dicts = [c.raw_dict for c in candidates]
+    pack, meta = policy._sequential_match(cand_dicts, layer=MockLayer(), deterministic=True)
+    assert meta["policy_mode"] == "scql"
+    assert "delta_theta" in meta
+    if meta["delta_theta"] > 0.5:
+        assert meta["selected_mode"] == "scql_alternative"
+        assert len(pack) == len(m_r)
+    else:
+        assert meta["selected_mode"] == "reference_b4"
+        assert len(pack) == len(m_b) == 3
+
+    # 5. Finite-horizon matching target evaluation
+    target_q = copy.deepcopy(policy.q_net)
+    target_q.eval()
+    gamma = 0.995
+    r_t = 8.5  # simulator deadline-valid completion return
+
+    trans_match = Transition(
+        candidates=candidates,
+        history=history,
+        b_rem=b_rem_b,
+        partial_matching=m_b,
+        reward=r_t,
+        done=False,
+        kind="matching",
+        completed_value=r_t,
+        next_history=history,
+        next_matchings=[m_b, m_r],
+        next_b_rems=[b_rem_b, b_rem_r],
+    )
+
+    y_target = compute_ddqn_target(trans_match, policy.q_net, target_q, gamma=gamma)
+    # Expected: r_t + gamma * Q_target(s_{t+1}, argmax(Q_online))
+    with torch.no_grad():
+        q_on_b = policy.q_net.evaluate_matching(m_b, history, b_rem=b_rem_b)
+        q_on_r = policy.q_net.evaluate_matching(m_r, history, b_rem=b_rem_r)
+        best_m = m_b if q_on_b >= q_on_r else m_r
+        best_br = b_rem_b if q_on_b >= q_on_r else b_rem_r
+        expected_y = r_t + gamma * float(target_q.evaluate_matching(best_m, history, b_rem=best_br).item())
+
+    assert float(y_target) == pytest.approx(expected_y, abs=1e-5), "Finite horizon target must match y_t = r_t + max Q_target(s_{t+1}, M')"
+
+    # Terminal matching transition: omit bootstrap term
+    trans_match_term = Transition(
+        candidates=candidates,
+        history=history,
+        b_rem=b_rem_b,
+        partial_matching=m_b,
+        reward=r_t,
+        done=True,
+        kind="matching",
+        completed_value=r_t,
+        next_history=history,
+        next_matchings=[m_b, m_r],
+        next_b_rems=[b_rem_b, b_rem_r],
+    )
+    y_term = compute_ddqn_target(trans_match_term, policy.q_net, target_q, gamma=gamma)
+    assert float(y_term) == pytest.approx(r_t, abs=1e-5), "Terminal matching target must equal actual completion reward without bootstrap"
 
 
