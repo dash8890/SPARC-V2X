@@ -797,6 +797,7 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                 "hq_spo_gate": action.get("hq_spo_gate"),
                 "hq_spo_baseline": action.get("hq_spo_baseline"),
                 "structured_priority_meta": action.get("structured_priority_meta"),
+                "scql_meta": action.get("scql_meta"),
                 "weights": action.get("weights"),
                 "policy_mode": action.get("policy_mode"),
                 "reward": reward,
