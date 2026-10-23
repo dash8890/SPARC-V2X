@@ -117,6 +117,8 @@ def structured_priority_ppo_update(
     gae_lambda: float = 0.95,
     target_kl: Optional[float] = 0.02,
     detach_trunk: bool = True,
+    cf_targets: Optional[List[dict]] = None,
+    alpha_pref: float = 0.05,
 ) -> Dict[str, float]:
     steps = build_sp_steps(traces, lam_L, gamma=gamma, gae_lambda=gae_lambda)
     if not steps:
@@ -128,6 +130,7 @@ def structured_priority_ppo_update(
     actor_losses = []
     value_losses = []
     cost_losses = []
+    pref_losses = []
     approx_kls = []
     grad_norms = []
     early_stopped = False
@@ -179,11 +182,27 @@ def structured_priority_ppo_update(
                 total_value_loss = total_value_loss + v_loss
                 total_cost_loss = total_cost_loss + c_loss
 
+            pref_loss = torch.tensor(0.0, device=device)
+            if cf_targets and alpha_pref > 0.0:
+                total_pref = torch.tensor(0.0, device=device)
+                for cf in cf_targets:
+                    obs = cf["sp_obs"]
+                    task_t = obs["task_t"].to(device)
+                    hlp_t = obs["hlp_t"].to(device)
+                    radio_t = obs["radio_t"].to(device)
+                    budget_t = obs["budget_t"].to(device)
+                    zw_star = torch.tensor([cf["target_z_w"]], dtype=torch.float32, device=device)
+                    zb_star = torch.tensor([cf["target_z_b"]], dtype=torch.float32, device=device)
+                    logp_star, _ = policy.evaluate_actions(task_t, hlp_t, radio_t, budget_t, zw_star, zb_star)
+                    total_pref = total_pref - logp_star.squeeze()
+                pref_loss = total_pref / max(1, len(cf_targets))
+
             bsz = max(1, len(batch))
             loss = (
                 (total_actor_loss / bsz)
                 + value_coef * (total_value_loss / bsz)
                 + cost_coef * (total_cost_loss / bsz)
+                + alpha_pref * pref_loss
             )
 
             optimizer.zero_grad()
@@ -217,6 +236,7 @@ def structured_priority_ppo_update(
             actor_losses.append(float((total_actor_loss / bsz).detach().cpu()))
             value_losses.append(float((total_value_loss / bsz).detach().cpu()))
             cost_losses.append(float((total_cost_loss / bsz).detach().cpu()))
+            pref_losses.append(float(pref_loss.detach().cpu()))
 
             if target_kl is not None and mean_batch_kl > 1.5 * float(target_kl):
                 early_stopped = True
@@ -229,6 +249,7 @@ def structured_priority_ppo_update(
         "actor_loss": float(np.mean(actor_losses)) if actor_losses else 0.0,
         "value_loss": float(np.mean(value_losses)) if value_losses else 0.0,
         "cost_loss": float(np.mean(cost_losses)) if cost_losses else 0.0,
+        "pref_loss": float(np.mean(pref_losses)) if pref_losses else 0.0,
         "approx_kl": float(np.mean(approx_kls)) if approx_kls else 0.0,
         "grad_norm": float(np.mean(grad_norms)) if grad_norms else 0.0,
         "early_stopped": bool(early_stopped),

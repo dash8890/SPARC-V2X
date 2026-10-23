@@ -41,6 +41,8 @@ tests/*
 !tests/test_redesign_integrity.py
 !tests/test_ppo_stability_and_kl_stopping.py
 !tests/test_causal_safety_guard.py
+!tests/test_replay_determinism.py
+!tests/test_counterfactual_preference_loss.py
 analysis/
 mobility/
 
