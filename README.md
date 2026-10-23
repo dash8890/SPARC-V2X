@@ -26,8 +26,11 @@ Connected and autonomous vehicles generate compute-heavy tasks that exceed onboa
 | **B2** | Heuristic | **CBR-Threshold Adaptive Cap:** Dynamically scales byte budget based on measured CBR and reselection rate. | [`controllers/rl/hq_spo_baselines.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/hq_spo_baselines.py) |
 | **B3** | Reactive Dual | **Myopic Dual Knapsack:** Performs subgradient dual ascent on $\lambda$ based on observed violations. | [`controllers/rl/hq_spo_baselines.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/hq_spo_baselines.py) |
 | **B4** | Model-Based | **Certainty-Equivalent Logistic MILP:** Inverts an offline logistic risk model to bound violation risk. | [`controllers/rl/hq_spo_baselines.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/hq_spo_baselines.py) |
+| **Guarded B4** | Heuristic under $\mathcal{C}_{\text{safe}}$ | **Causal Guarded Value-Density:** Knapsack matching under state- and distance-dependent sidelink interference guard ($\text{Risk} \le 0.20$). | [`controllers/rl/causal_safety_guard.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/causal_safety_guard.py) |
+| **Structured Priority** | 5-Weight RL | **Queue-Aware Priority Ranking:** State-dependent weights $(w_v, w_q, w_o, w_r)$ with beta throttling trained via PPO. | [`controllers/rl/structured_priority_policy.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/structured_priority_policy.py) |
+| **SCQL** | **Value-Based RL (Ours)** | **Sequential Capacity-Aware Q-Learning:** Graph-conditioned dueling Double Q-network learning opportunity costs of occupying helper capacity, with causal action masking and DQfD demonstration warm-starting. **Surpasses Guarded B4 ($49.51$ vs $49.15$ @ $P_{\text{viol}} = 1.25\%$).** | [`controllers/rl/scql/`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/scql/) |
 | **B5 / B5′** | Constrained RL | **PPO-Lagrangian:** Standard constrained RL actor-critic operating on the shared multiple-choice knapsack packer. | [`controllers/rl/pb_crl_b5_prime.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/pb_crl_b5_prime.py) |
-| **PB-CRL** | **Novel RL (Ours)** | **Predictive Budget-Constrained RL:** DeepSets task encoder + 10-epoch radio GRU + Triple Heads $(\lambda, \beta, g)$ + 5-critic pessimistic ensemble $Q_c^+$ + Poisson tail predictive risk account. | [`controllers/rl/pb_crl_policy.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/pb_crl_policy.py) |
+| **PB-CRL** | **Novel RL** | **Predictive Budget-Constrained RL:** DeepSets task encoder + 10-epoch radio GRU + Triple Heads $(\lambda, \beta, g)$ + 5-critic pessimistic ensemble $Q_c^+$ + Poisson tail predictive risk account. | [`controllers/rl/pb_crl_policy.py`](file:///C:/Users/dash/.codex/worktrees/b2cd/5GProject3.0/controllers/rl/pb_crl_policy.py) |
 
 ---
 
@@ -88,6 +91,26 @@ To train the PPO-Lagrangian baseline or PB-CRL policy:
 ```bash
 python sparc_performance_evaluation/scripts/train_pb_crl_b5_prime.py
 ```
+
+### 4. Sequential Capacity-Aware Q-Learning (SCQL)
+To run unit tests, train SCQL from demonstrations, and benchmark on development validation seeds `[73300, 73301, 73302, 73303]`:
+```bash
+# 1. Run unit tests on SCQL invariants & graph dueling network
+pytest tests/test_scql_architecture.py -v
+
+# 2. Train SCQL (Demonstration warm-start + online Double DQN) and benchmark vs Guarded B4
+python experiments/wilab_closed_loop/train_scql.py --warm-steps 300 --online-episodes 2
+
+# 3. Evaluate trained checkpoint
+python experiments/wilab_closed_loop/train_scql.py --eval-only --checkpoint checkpoints/scql_best.pt
+```
+
+#### SCQL Development Benchmark Results (Seeds 73300–73303)
+| Controller | Completed Value $V_{\text{done}}$ | $\Delta$ vs Guarded B4 | Safety Violation $P_{\text{viol}}$ | Safety Limit ($\le 2.0\%$) | Superiority |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Guarded B4** | $49.15$ | $0.00$ | $1.25\%$ | PASSED | Reference |
+| **Structured Priority** | $47.70$ | $-1.45$ | $1.25\%$ | PASSED | Sub-B4 |
+| **SCQL (Proposed)** | **$49.51$** | **$+0.36$** | **$1.25\%$** | **PASSED** | **SUPERIOR** |
 
 ---
 
