@@ -1,176 +1,206 @@
-"""Comprehensive Experiment for Task 4: Matched Closed-Loop Safety-Guard Evaluation.
+"""SPARC-V2X Causal Pre-Admission Safety Guard.
 
-Compares under strictly matched conditions:
-1. Baseline B4 Reference (frozen)
-2. Corrected Structured Priority Policy (initialization / baseline-parity checkpoint)
-3. Structured Priority Policy with Causal Pre-Admission Risk Guard:
-   Uses only causal pre-admission signals available before transmission:
-   - Candidate transmission distance d(k, j) derived from forward kinematics
-   - Candidate payload bytes b_k
-   - Sensing-window Channel Busy Ratio (CBR_t)
-   - Bounded epoch burst cap conditioned on channel congestion:
-       B_epoch_cap(cbr) = 175000 * max(0.20, 1.0 - 15.0 * max(0.0, cbr - 0.040))
-       and edge-of-cell exclusion: skip candidate if d_kj > 210m and b_k > 25000.
+Implements state- and distance-dependent sidelink safety filtering:
+  Observed radio state -> Safety-feasible candidate set C_safe -> Task-helper priorities -> Assignments
 
-Evaluates on:
-- Validation seeds: [73300, 73301, 73302, 73303]
-- Training seeds:   [73200, 73201]
+Mathematical Formulation:
+  The spatio-temporal interference risk of transmitting task k (payload b_k) to helper j (distance d_kj) is:
+      Risk(k, j) = (d_kj / R_comm)^2 * (b_k / B_max)
+  where R_comm = 250.0m (3GPP NR-V2X communication range) and B_max = 175,000 B (epoch airtime cap).
 
-Reports:
-- V_done (completed utility)
-- P_viol (safety violation fraction under absolute 2% limit)
-- Completed task count
-- Total admitted bytes
-- Mean PRR and min window PRR
-- Causal interventions taken prior to failure windows
-- Rejected and redirected tasks
+Pre-Admission Filter Criteria (C_safe):
+  1. Risk(k, j) <= r_thresh (default 0.20)
+  2. Cell-edge high-burst cut: reject if d_kj > 220m and b_k > 20,000 B
+  3. Startup transient protection: reject if t < 0.025s and b_k > 10,000 B
+  4. Monopolization cut: reject if b_k > 62,000 B and d_kj > 35m
+  5. Dynamic epoch throttling: if any admitted candidate has d_kj > 180m,
+     the aggregate epoch byte budget is throttled to 55,000 B to prevent co-channel half-duplex collisions.
+
+Enables matched 4-way attribution:
+  1. B4 Reference (no guard)
+  2. Guarded B4 (B4 under C_safe)
+  3. Causal Guarded Structured Priority (SP under C_safe)
+  4. Zero Offload B_0 (Background safety floor)
 """
 from __future__ import annotations
 
 import copy
-import json
 import math
-import os
-import shutil
 import sys
-import tempfile
-import time
 from pathlib import Path
-import numpy as np
-import torch
+from typing import Any, Dict, List, Optional, Tuple
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from controllers.rl.structured_priority_policy import StructuredPriorityPolicy, score_and_match
+from controllers.rl.residual_task_policy import ResidualTaskPolicy
+from controllers.rl.hq_spo_baselines import CeRiskWeights
 
 
-class CausalGuardedPolicy(StructuredPriorityPolicy):
-    """Structured Priority Policy with Causal Pre-Admission Risk Guard."""
-    def __init__(self, d_max: float = 150.0, cbr_thresh: float = 0.042):
-        super().__init__()
-        self.d_max = float(d_max)
-        self.cbr_thresh = float(cbr_thresh)
-        self.score_and_match_fn = self._guarded_match
-
-    def _guarded_match(self, candidates, weights, beta_throttle, b_max=175000, unique_sources=True, unique_helpers=True, layer=None):
-        return score_and_match_guarded(
-            candidates, weights, beta_throttle,
-            b_max=b_max, unique_sources=unique_sources, unique_helpers=unique_helpers,
-            d_max=self.d_max, layer=layer,
-        )
-
-    def act_numpy(self, state, layer=None, *, deterministic: bool = True):
-        cbr = float(state.get("cbr", 0.0))
-        w, beta, lp, zw, zb, obs = super().act_numpy(state, layer, deterministic=deterministic)
-        if cbr > self.cbr_thresh:
-            adapted_beta = min(beta, max(0.25, 0.88 * (1.0 - 10.0 * (cbr - self.cbr_thresh))))
-        else:
-            adapted_beta = beta
-        return w, adapted_beta, lp, zw, zb, obs
+def causal_sidelink_risk(
+    dist: float,
+    payload_bytes: int,
+    r_comm: float = 250.0,
+    b_max: float = 175000.0,
+) -> float:
+    """Computes spatio-temporal sidelink interference risk for candidate offload (k, j)."""
+    if dist < 0.0:
+        return 0.0
+    return ((dist / r_comm) ** 2) * (float(payload_bytes) / b_max)
 
 
-def score_and_match_guarded(
-    candidates,
-    weights,
-    beta_throttle,
-    b_max=175000,
-    unique_sources=True,
-    unique_helpers=True,
-    d_max=150.0,
-    now_sec=0.0,
-    layer=None,
-):
-    """Deterministic Priority Matching with Causal Pre-Admission Geometric Guard."""
-    if not candidates:
-        return [], {"n_pack": 0, "bytes": 0, "scores": [], "rejected_geometry": 0}
+def filter_candidates_causal_guard(
+    candidates: List[Dict[str, Any]],
+    layer: Any = None,
+    r_thresh: float = 0.20,
+    r_comm: float = 250.0,
+    b_max: int = 175000,
+    startup_sec: float = 0.025,
+) -> Tuple[List[Dict[str, Any]], int, int]:
+    """Applies causal state- and distance-dependent sidelink safety filtering.
 
-    w = [float(x) for x in weights]
-    w_v, w_q, w_o, w_r = w[0], w[1], w[2], w[3]
-    b_limit = int(float(beta_throttle) * b_max)
-
+    Returns:
+        (filtered_candidates, n_rejected, effective_b_max)
+    """
+    now_sec = 0.0
     if layer is not None and hasattr(layer, "current_epoch"):
         now_sec = (10.0 * float(layer.current_epoch)) / 1000.0
 
-    scored = []
-    rejected_geometry = 0
+    filtered = []
+    rejected = 0
+    has_far = False
+
     for c in candidates:
         l_kj = float(c.get("lat_pressure", c.get("L_kj", 0.0)))
         contact_feas = bool(c.get("contact_feasible", True))
         if l_kj > 1.0 or not contact_feas:
             continue
 
-        # Causal Pre-Admission Guard: Source-Helper Euclidean Distance Check
+        b_k = int(c.get("payload_bytes", 0))
         sid = c.get("source_id")
         hid = c.get("helper_id")
-        dist = -1.0
+
+        dist = 0.0
         if layer is not None and hasattr(layer, "source_kinematics") and sid in layer.source_kinematics:
             src_kin = layer.source_kinematics[sid]
-            hlp = next((h for h in layer.helpers if h.helper_id == hid), None)
-            if hlp is not None and hlp.kinematics is not None:
+            hlp = next((h for h in getattr(layer, "helpers", []) if getattr(h, "helper_id", None) == hid), None)
+            if hlp is not None and getattr(hlp, "kinematics", None) is not None:
                 x_s = src_kin.x(now_sec)
                 y_s = src_kin.y
                 x_h = hlp.kinematics.x(now_sec)
                 y_h = hlp.kinematics.y
-                dist = math.sqrt((x_s - x_h)**2 + (y_s - y_h)**2)
+                dist = math.hypot(x_s - x_h, y_s - y_h)
 
-        # Causal Pre-Admission Risk Guard:
-        # 1. Edge-of-cell high-power transmission check (>150m for >20kB, >120m for >35kB)
-        # 2. Maximum single-task burst limit (b_k > 58kB monopolizes >58% of 100ms slots)
-        # 3. Startup transient protection (t < 0.03s before sensing buffer stabilizes)
-        b_k = int(c.get("payload_bytes", 0))
+        risk = causal_sidelink_risk(dist, b_k, r_comm=r_comm, b_max=float(b_max))
+
         is_risky = (
-            (dist > d_max and b_k > 20000) or
-            (b_k > 58000) or
-            (dist > 120.0 and b_k > 35000) or
-            (now_sec < 0.03 and b_k > 20000)
+            (risk > r_thresh) or
+            (dist > 220.0 and b_k > 20000) or
+            (now_sec < startup_sec and b_k > 10000) or
+            (b_k > 62000 and dist > 35.0)
         )
         if is_risky:
-            rejected_geometry += 1
+            rejected += 1
             continue
 
-        v_kj = float(c.get("norm_value", c.get("V_kj", 0.0)))
-        o_kj = float(c.get("occ_cost", c.get("O_kj", 0.0)))
-        r_kj = float(c.get("rad_footprint", c.get("R_kj", 0.0)))
+        c_copy = dict(c)
+        c_copy["_dist"] = dist
+        c_copy["_risk"] = risk
+        if dist > 180.0:
+            has_far = True
+        filtered.append(c_copy)
 
-        score = w_v * v_kj - w_q * l_kj - w_o * o_kj - w_r * r_kj
-        scored.append((score, c))
+    eff_b_max = 55000 if has_far else b_max
+    return filtered, rejected, eff_b_max
 
-    scored.sort(key=lambda x: x[0], reverse=True)
 
-    packed = []
-    used_sources = set()
-    used_helpers = set()
-    total_bytes = 0
-    scores_kept = []
+def score_and_match_causal_guard(
+    candidates: List[Dict[str, Any]],
+    weights: List[float],
+    beta_throttle: float,
+    b_max: int = 175000,
+    unique_sources: bool = True,
+    unique_helpers: bool = True,
+    layer: Any = None,
+    r_thresh: float = 0.20,
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """Deterministic Priority Matching under Causal Safety Guard."""
+    filtered, rej, eff_b = filter_candidates_causal_guard(
+        candidates, layer=layer, r_thresh=r_thresh, b_max=b_max,
+    )
+    b_limit = min(int(float(beta_throttle) * b_max), eff_b)
+    pack, meta = score_and_match(
+        filtered,
+        weights=weights,
+        beta_throttle=1.0,
+        b_max=b_limit,
+        unique_sources=unique_sources,
+        unique_helpers=unique_helpers,
+    )
+    meta["rejected_geometry"] = rej
+    return pack, meta
 
-    for s, c in scored:
-        sid = int(c.get("source_id", -1))
-        hid = int(c.get("helper_id", -1))
-        b = int(c.get("payload_bytes", 0))
 
-        if unique_sources and sid in used_sources:
-            continue
-        if unique_helpers and hid in used_helpers:
-            continue
-        if total_bytes + b > b_limit:
-            continue
+class CausalGuardedPolicy(StructuredPriorityPolicy):
+    """Structured Priority Policy equipped with State-Dependent Causal Safety Guard."""
+    def __init__(self, r_thresh: float = 0.20):
+        super().__init__()
+        self.r_thresh = float(r_thresh)
+        self.score_and_match_fn = self._guarded_match
 
-        packed.append(c)
-        scores_kept.append(float(s))
-        if unique_sources:
-            used_sources.add(sid)
-        if unique_helpers:
-            used_helpers.add(hid)
-        total_bytes += b
+    def _guarded_match(
+        self,
+        candidates: List[Dict[str, Any]],
+        weights: List[float],
+        beta_throttle: float,
+        b_max: int = 175000,
+        unique_sources: bool = True,
+        unique_helpers: bool = True,
+        layer: Any = None,
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        return score_and_match_causal_guard(
+            candidates,
+            weights=weights,
+            beta_throttle=beta_throttle,
+            b_max=b_max,
+            unique_sources=unique_sources,
+            unique_helpers=unique_helpers,
+            layer=layer,
+            r_thresh=self.r_thresh,
+        )
 
-    meta = {
-        "n_pack": len(packed),
-        "bytes": total_bytes,
-        "b_limit": b_limit,
-        "weights": [round(x, 4) for x in w],
-        "beta_throttle": float(beta_throttle),
-        "scores": scores_kept,
-        "rejected_geometry": rejected_geometry,
-    }
-    return packed, meta
+
+class GuardedB4Policy(ResidualTaskPolicy):
+    """B4 Baseline Controller equipped with the identical State-Dependent Causal Safety Guard."""
+    def __init__(self, r_thresh: float = 0.20):
+        super().__init__(logit_mode="direct", logit_scale=100.0)
+        self.ce_weights = CeRiskWeights.load()
+        self.r_thresh = float(r_thresh)
+        self.score_and_match_fn = self._guarded_b4_match
+
+    def _guarded_b4_match(
+        self,
+        candidates: List[Dict[str, Any]],
+        weights: List[float],
+        beta_throttle: float,
+        b_max: int = 175000,
+        unique_sources: bool = True,
+        unique_helpers: bool = True,
+        layer: Any = None,
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        filtered, rej, eff_b = filter_candidates_causal_guard(
+            candidates, layer=layer, r_thresh=self.r_thresh, b_max=b_max,
+        )
+        b_limit = min(b_max, eff_b)
+        # B4 greedy knapsack on value density
+        pack, meta = score_and_match(
+            filtered,
+            weights=[1.0, 0.0, 0.0, 0.0],
+            beta_throttle=1.0,
+            b_max=b_limit,
+            unique_sources=unique_sources,
+            unique_helpers=unique_helpers,
+        )
+        meta["rejected_geometry"] = rej
+        return pack, meta

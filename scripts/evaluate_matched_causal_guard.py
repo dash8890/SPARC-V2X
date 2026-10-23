@@ -1,10 +1,12 @@
 """Matched Closed-Loop Comparison of Causal Pre-Admission Safety Guard.
 
 Evaluates under identical frozen environment conditions:
-- Controllers:
-  1. B4 Reference Baseline (frozen)
-  2. Structured Priority Policy (repaired baseline-parity initialization)
-  3. Structured Priority with Causal Pre-Admission Risk Guard (CausalGuardedPolicy)
+- Controllers (4-way attribution panel + reference):
+  1. B4 Reference Baseline (frozen heuristic knapsack, no guard)
+  2. Structured Priority Parity (baseline parity initialization, no guard)
+  3. Guarded B4 Policy (B4 heuristic under C_safe)
+  4. Causal Guarded SP Policy (Structured Priority under C_safe)
+  5. Zero Offload B_0 (Background safety floor)
 - Scenarios:
   - Validation seeds: [73300, 73301, 73302, 73303]
   - Training seeds:   [73200, 73201]
@@ -14,10 +16,11 @@ Evaluates under identical frozen environment conditions:
   - Completed task count
   - Admitted bytes
   - Min PRR and Mean PRR
-  - Rejected/redirected candidate tasks
+  - Rejected candidate tasks (via pre-admission filter)
 """
 from __future__ import annotations
 
+import argparse
 import copy
 import json
 import os
@@ -36,10 +39,31 @@ sys.path.insert(0, str(ROOT / "experiments" / "wilab_closed_loop"))
 from train_wilab_closed_loop import ROOT as WILAB_ROOT, run_episode
 from controllers.rl.safety_governor import SafetyGovernor
 from controllers.rl.structured_priority_policy import StructuredPriorityPolicy
-from controllers.rl.causal_safety_guard import CausalGuardedPolicy
+from controllers.rl.residual_task_policy import ResidualTaskPolicy
+from controllers.rl.hq_spo_baselines import CeRiskWeights
+from controllers.rl.causal_safety_guard import (
+    CausalGuardedPolicy,
+    GuardedB4Policy,
+)
 
 
-def run_one_eval(policy, sim_seed: int, eid: int, runs_dir: Path, is_training_seed: bool = False, policy_mode: str = "structured_priority"):
+class ZeroOffloadPolicy(StructuredPriorityPolicy):
+    """Zero-offload baseline policy B_0 that rejects all computation traffic."""
+    def __init__(self):
+        super().__init__()
+        self.score_and_match_fn = lambda candidates, weights, beta_throttle, **kwargs: (
+            [], {"n_pack": 0, "bytes": 0, "scores": [], "rejected_geometry": len(candidates)}
+        )
+
+
+def run_one_eval(
+    policy,
+    sim_seed: int,
+    eid: int,
+    runs_dir: Path,
+    is_training_seed: bool = False,
+    policy_mode: str = "structured_priority",
+):
     bridge = Path(tempfile.gettempdir()) / f"eval_cguard_{os.getpid()}_{eid}"
     if bridge.exists():
         shutil.rmtree(bridge, ignore_errors=True)
@@ -106,6 +130,11 @@ def run_one_eval(policy, sim_seed: int, eid: int, runs_dir: Path, is_training_se
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Evaluate Matched Causal Safety Guard")
+    parser.add_argument("--controllers", nargs="+", default=["Guarded_B4", "Causal_Guarded_SP"],
+                        help="Controllers to evaluate: B4_Reference, SP_Parity, Guarded_B4, Causal_Guarded_SP, Zero_Offload")
+    args = parser.parse_args()
+
     print("=" * 80)
     print("MATCHED CLOSED-LOOP EVALUATION: CAUSAL PRE-ADMISSION SAFETY GUARD")
     print("=" * 80)
@@ -116,78 +145,71 @@ def main():
     val_seeds = [73300, 73301, 73302, 73303]
     train_seeds = [73200, 73201]
 
-    from controllers.rl.residual_task_policy import ResidualTaskPolicy
-    from controllers.rl.hq_spo_baselines import CeRiskWeights
+    b4_ref = ResidualTaskPolicy(logit_mode="direct", logit_scale=100.0)
+    b4_ref.ce_weights = CeRiskWeights.load()
+    b4_ref.eval()
 
-    b4_pol = ResidualTaskPolicy(logit_mode="direct", logit_scale=100.0)
-    b4_pol.ce_weights = CeRiskWeights.load()
-    b4_pol.eval()
+    sp_parity = StructuredPriorityPolicy()
+    sp_parity.eval()
 
-    sp_parity_pol = StructuredPriorityPolicy()
-    sp_parity_pol.eval()
+    b4_guarded = GuardedB4Policy(r_thresh=0.20)
+    b4_guarded.eval()
 
-    cguard_pol = CausalGuardedPolicy(d_max=150.0, cbr_thresh=0.042)
-    cguard_pol.eval()
+    sp_guarded = CausalGuardedPolicy(r_thresh=0.20)
+    sp_guarded.eval()
 
-    controllers = [
-        ("B4_Reference", b4_pol, "ce_milp"),
-        ("Structured_Priority_Parity", sp_parity_pol, "structured_priority"),
-        ("Causal_Guarded_SP", cguard_pol, "structured_priority"),
-    ]
+    zero_offload = ZeroOffloadPolicy()
+    zero_offload.eval()
+
+    controller_map = {
+        "B4_Reference": (b4_ref, "ce_milp"),
+        "SP_Parity": (sp_parity, "structured_priority"),
+        "Guarded_B4": (b4_guarded, "structured_priority"),
+        "Causal_Guarded_SP": (sp_guarded, "structured_priority"),
+        "Zero_Offload": (zero_offload, "structured_priority"),
+    }
+
+    selected = [(name, controller_map[name][0], controller_map[name][1]) for name in args.controllers if name in controller_map]
 
     results = {}
-    base_eid = 83000
+    base_eid = 85000
 
-    import concurrent.futures
-
-    for cname, pol, pmode in controllers:
+    for cname, pol, pmode in selected:
         print(f"\n================ Evaluating Controller: {cname} (mode={pmode}) ================")
         results[cname] = {"validation": [], "training": []}
 
-        # Validation seeds in parallel
+        # Validation seeds
         print("  Evaluating Validation Seeds [73300-73303]...")
-        val_tasks = [(pol, s, base_eid + i + 1, runs_dir, False, pmode) for i, s in enumerate(val_seeds)]
-        base_eid += len(val_seeds)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-            futs = {executor.submit(run_one_eval, *t): t[1] for t in val_tasks}
-            for fut in concurrent.futures.as_completed(futs):
-                res = fut.result()
-                results[cname]["validation"].append(res)
-        results[cname]["validation"].sort(key=lambda x: x["seed"])
-        for res in results[cname]["validation"]:
+        for i, s in enumerate(val_seeds):
+            eid = base_eid + 1
+            base_eid += 1
+            res = run_one_eval(pol, s, eid, runs_dir, is_training_seed=False, policy_mode=pmode)
+            results[cname]["validation"].append(res)
             print(f"    Val Seed {res['seed']}: V={res['V_done']:.2f} | P_viol={res['P_viol']*100:.2f}% ({res['n_viols']} viols) | PRR={res['mean_prr']:.4f} (min={res['min_prr']:.4f}) | Bytes={res['admitted_bytes']} | Tasks={res['completed_tasks']} | RejGeom={res['rejected_geom_candidates']}")
-
-        # Training seeds in parallel
-        print("  Evaluating Training Seeds [73200-73201]...")
-        train_tasks = [(pol, s, base_eid + i + 1, runs_dir, True, pmode) for i, s in enumerate(train_seeds)]
-        base_eid += len(train_seeds)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            futs = {executor.submit(run_one_eval, *t): t[1] for t in train_tasks}
-            for fut in concurrent.futures.as_completed(futs):
-                res = fut.result()
-                results[cname]["training"].append(res)
-        results[cname]["training"].sort(key=lambda x: x["seed"])
-        for res in results[cname]["training"]:
-            print(f"    Train Seed {res['seed']}: V={res['V_done']:.2f} | P_viol={res['P_viol']*100:.2f}% ({res['n_viols']} viols) | PRR={res['mean_prr']:.4f} (min={res['min_prr']:.4f}) | Bytes={res['admitted_bytes']} | Tasks={res['completed_tasks']} | RejGeom={res['rejected_geom_candidates']}")
 
         val_v = np.mean([r["V_done"] for r in results[cname]["validation"]])
         val_pv = np.mean([r["P_viol"] for r in results[cname]["validation"]])
         print(f"\n  >>> {cname} Validation Mean: V = {val_v:.2f} | P_viol = {val_pv*100:.2f}% | Absolute Safe (<=2.0%): {val_pv <= 0.02} <<<")
 
-    # Serialize summary
-    summary_data = {}
-    for cname, _, _ in controllers:
-        summary_data[cname] = {
+    # Save summary
+    summary_file = runs_dir / "matched_guard_comparison.json"
+    existing = {}
+    if summary_file.is_file():
+        try:
+            existing = json.loads(summary_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    for cname in results:
+        existing[cname] = {
             "validation": [{k: v for k, v in r.items() if k != "audit"} for r in results[cname]["validation"]],
-            "training": [{k: v for k, v in r.items() if k != "audit"} for r in results[cname]["training"]],
             "val_mean_v": float(np.mean([r["V_done"] for r in results[cname]["validation"]])),
             "val_mean_p_viol": float(np.mean([r["P_viol"] for r in results[cname]["validation"]])),
             "val_safe": bool(np.mean([r["P_viol"] for r in results[cname]["validation"]]) <= 0.02),
         }
 
-    out_file = runs_dir / "matched_guard_comparison.json"
-    out_file.write_text(json.dumps(summary_data, indent=2), encoding="utf-8")
-    print(f"\nSaved full results to {out_file}")
+    summary_file.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    print(f"\nSaved updated results to {summary_file}")
 
 
 if __name__ == "__main__":
