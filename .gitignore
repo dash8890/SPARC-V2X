@@ -40,6 +40,7 @@ tests/*
 !tests/test_redesign_learning_path.py
 !tests/test_redesign_integrity.py
 !tests/test_ppo_stability_and_kl_stopping.py
+!tests/test_causal_safety_guard.py
 analysis/
 mobility/
 

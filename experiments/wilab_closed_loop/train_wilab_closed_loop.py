@@ -124,7 +124,11 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
             z_w = [0.0, 0.0, 0.0, 0.0]
             z_b = 0.0
             sp_obs = None
-        pack, meta = score_and_match(candidates, weights=weights, beta_throttle=beta, b_max=b_cap, unique_sources=unique_sources)
+        score_match_fn = getattr(policy, "score_and_match_fn", score_and_match)
+        try:
+            pack, meta = score_match_fn(candidates, weights=weights, beta_throttle=beta, b_max=b_cap, unique_sources=unique_sources, layer=layer)
+        except TypeError:
+            pack, meta = score_match_fn(candidates, weights=weights, beta_throttle=beta, b_max=b_cap, unique_sources=unique_sources)
         action = assignments_to_action_fields(pack, layer, budget, safe_actions)
         action["n_candidates"] = int(len(candidates))
         action["policy_mode"] = "structured_priority"
