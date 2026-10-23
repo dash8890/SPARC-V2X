@@ -25,7 +25,7 @@ import torch
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     except Exception:
         pass
 
@@ -40,9 +40,13 @@ from controllers.rl.lagrangian_ppo import dual_ascent
 from controllers.rl.pb_crl_c2 import episode_c2_from_audit, DEFAULT_K
 from controllers.rl.structured_priority_policy import StructuredPriorityPolicy
 from controllers.rl.structured_priority_ppo import structured_priority_ppo_update
+from controllers.rl.causal_safety_guard import CausalGuardedPolicy
 
 ENVELOPE = 175000
 ALPHA = 0.02
+GUARDED_B4_TARGET = 49.15
+GUARDED_SP_INIT = 46.83
+UNGUARDED_B4_REF = 59.79
 CHECKPOINTS_DIR = ROOT / "checkpoints"
 CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -113,7 +117,7 @@ def eval_model(
     policy.eval()
     tasks = []
     for i, s in enumerate(seeds):
-        eid = eid_start + i
+        eid = eid_start + i + 1
         t_seed = 186100 + (s - 73300)
         tasks.append((policy, eid, s, t_seed, runs_dir, sim_time, density, tasks_per_source, False, True))
 
@@ -158,7 +162,7 @@ def train(args):
     print(f"Safety Constraint Threshold ALPHA: {ALPHA:.4f}")
     print(f"{'='*80}\n")
 
-    policy = StructuredPriorityPolicy()
+    policy = CausalGuardedPolicy(r_thresh=0.20)
     lam_L = 0.0
 
     optimizer = torch.optim.Adam(policy.parameters(), lr=args.lr)
@@ -168,10 +172,11 @@ def train(args):
     best_path = CHECKPOINTS_DIR / "structured_priority_best.pt"
     best_feas_path = CHECKPOINTS_DIR / "structured_priority_best_feasible.pt"
 
-    # Task 2: Include initialized baseline-parity policy as candidate checkpoint.
-    # Baseline parity performance on validation seeds [73300-73303] is 59.79.
-    init_v = 59.79
-    init_pv = 0.025
+    # Task 2: Include initialized baseline-parity guarded policy as candidate checkpoint.
+    # Initial Guarded SP performance on validation seeds [73300-73303] is 46.83 (P_viol = 1.25% <= 2.0%).
+    # Target comparison reference is Guarded B4: 49.15 (P_viol = 1.25%).
+    init_v = GUARDED_SP_INIT
+    init_pv = 0.0125
     init_feasible = bool(init_pv <= ALPHA)
     best_v = init_v
     best_feasible_v = init_v if init_feasible else -1e9
@@ -184,7 +189,17 @@ def train(args):
         "val_mean_p_viol": init_pv,
         "feasible": init_feasible,
     }, best_path)
-    print(f"  *** REGISTERED ROUND 0 BASELINE CANDIDATE: V = {init_v:.2f} (P_viol = {init_pv*100:.2f}%) -> {best_path} ***\n")
+    if init_feasible:
+        torch.save({
+            "policy": policy.state_dict(),
+            "lam_L": lam_L,
+            "round": 0,
+            "val_mean_v": init_v,
+            "val_mean_p_viol": init_pv,
+            "feasible": True,
+        }, best_feas_path)
+    print(f"  *** REGISTERED ROUND 0 GUARDED BASELINE CANDIDATE: V = {init_v:.2f} (P_viol = {init_pv*100:.2f}%) -> {best_path} ***")
+    print(f"  *** BENCHMARK TARGET: Guarded B4 = {GUARDED_B4_TARGET:.2f} | Gap to overcome: {GUARDED_B4_TARGET - init_v:+.2f} units ***\n")
 
     t_start = time.perf_counter()
     history = []
@@ -275,11 +290,15 @@ def train(args):
             val_v, val_prr, val_cbr, val_pv, val_safe, val_rows, eid = eval_model(
                 policy, curve_seeds, runs_dir, eid, args.sim_time, args.density, args.tasks_per_source, workers=args.workers,
             )
-            delta_b4 = val_v - 59.79
-            delta_init = val_v - 59.79
+            delta_guarded_b4 = val_v - GUARDED_B4_TARGET
+            delta_guarded_init = val_v - GUARDED_SP_INIT
+            delta_unguarded_b4 = val_v - UNGUARDED_B4_REF
             for r in val_rows:
                 print(f"      Seed {r['seed']}: V_done = {r['V_done']:.2f} | P_viol = {r['P_viol']*100:.2f}% | PRR = {r['mean_prr']:.4f}")
-            print(f"  >>> Validation Mean V: {val_v:.2f} (d_B4: {delta_b4:+.2f}, d_Init: {delta_init:+.2f}) | PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
+            print(f"  >>> Validation Mean V: {val_v:.2f} (d_GuardedB4: {delta_guarded_b4:+.2f}, d_GuardedInit: {delta_guarded_init:+.2f}, d_UnguardedB4: {delta_unguarded_b4:+.2f})")
+            print(f"      PRR: {val_prr:.4f} | CBR: {val_cbr:.4f} | Mean P_viol: {val_pv*100:.2f}% | Feasible Fraction: {val_safe*100:.1f}%")
+            if val_v > GUARDED_B4_TARGET and val_pv <= ALPHA:
+                print(f"  *** CONSTRAINED SUPERIORITY ACHIEVED: V = {val_v:.2f} > Guarded B4 ({GUARDED_B4_TARGET:.2f}) with P_viol = {val_pv*100:.2f}% <= 2.0% ***")
 
             round_entry = {
                 "round": rnd + 1,
@@ -295,8 +314,9 @@ def train(args):
                 "val_mean_v": val_v,
                 "val_mean_p_viol": val_pv,
                 "val_feasible_fraction": val_safe,
-                "delta_b4": delta_b4,
-                "delta_init": delta_init,
+                "delta_guarded_b4": delta_guarded_b4,
+                "delta_guarded_init": delta_guarded_init,
+                "delta_unguarded_b4": delta_unguarded_b4,
                 "lam_L": lam_L,
                 "weights_bias": cur_w,
                 "beta_bias": cur_beta,
