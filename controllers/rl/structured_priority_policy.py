@@ -238,10 +238,13 @@ class StructuredPriorityPolicy(nn.Module):
         helper_feats: Optional[torch.Tensor] = None,
         radio_hist: Optional[torch.Tensor] = None,
         budget_block: Optional[torch.Tensor] = None,
+        detach_trunk: bool = False,
     ) -> torch.Tensor:
         if helper_feats is None or radio_hist is None or budget_block is None:
             return torch.tensor(0.0)
         trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
+        if detach_trunk:
+            trunk_h = trunk_h.detach()
         return self.v_r_head(trunk_h).squeeze(-1)
 
     def cost_value(
@@ -250,10 +253,13 @@ class StructuredPriorityPolicy(nn.Module):
         helper_feats: Optional[torch.Tensor] = None,
         radio_hist: Optional[torch.Tensor] = None,
         budget_block: Optional[torch.Tensor] = None,
+        detach_trunk: bool = False,
     ) -> torch.Tensor:
         if helper_feats is None or radio_hist is None or budget_block is None:
             return torch.tensor(0.0)
         trunk_h = self.forward_trunk(task_feats, helper_feats, radio_hist, budget_block)
+        if detach_trunk:
+            trunk_h = trunk_h.detach()
         return self.v_c_head(trunk_h).squeeze(-1)
 
     def act_numpy(self, state, layer=None, *, deterministic: bool = True):

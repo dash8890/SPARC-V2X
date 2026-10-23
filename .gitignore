@@ -39,6 +39,7 @@ tests/*
 !tests/test_actor_learning_integrity.py
 !tests/test_redesign_learning_path.py
 !tests/test_redesign_integrity.py
+!tests/test_ppo_stability_and_kl_stopping.py
 analysis/
 mobility/
 

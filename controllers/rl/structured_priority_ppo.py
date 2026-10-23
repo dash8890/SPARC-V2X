@@ -115,6 +115,8 @@ def structured_priority_ppo_update(
     entropy_coef: float = 0.01,
     gamma: float = 0.995,
     gae_lambda: float = 0.95,
+    target_kl: Optional[float] = 0.02,
+    detach_trunk: bool = True,
 ) -> Dict[str, float]:
     steps = build_sp_steps(traces, lam_L, gamma=gamma, gae_lambda=gae_lambda)
     if not steps:
@@ -127,9 +129,12 @@ def structured_priority_ppo_update(
     value_losses = []
     cost_losses = []
     approx_kls = []
-
     grad_norms = []
+    early_stopped = False
+
     for _ in range(epochs):
+        if early_stopped:
+            break
         indices = list(range(len(steps)))
         random.shuffle(indices)
 
@@ -139,11 +144,9 @@ def structured_priority_ppo_update(
             if not batch:
                 continue
 
-            # Batch forward pass: individual forward passes per transition (variable candidate task counts)
             total_actor_loss = torch.tensor(0.0, device=device)
             total_value_loss = torch.tensor(0.0, device=device)
             total_cost_loss = torch.tensor(0.0, device=device)
-            kl_accum = []
 
             for s in batch:
                 obs = s["sp_obs"]
@@ -164,10 +167,10 @@ def structured_priority_ppo_update(
                 ratio = torch.exp(logp - old_logp)
                 surr1 = ratio * adv
                 surr2 = torch.clamp(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * adv
-                policy_loss = -torch.min(surr1, surr2) - entropy_coef * ent
+                policy_loss = -torch.min(surr1, surr2).squeeze() - entropy_coef * ent.squeeze()
 
-                pred_r = policy.value(task_t, hlp_t, radio_t, budget_t)
-                pred_c = policy.cost_value(task_t, hlp_t, radio_t, budget_t)
+                pred_r = policy.value(task_t, hlp_t, radio_t, budget_t, detach_trunk=detach_trunk)
+                pred_c = policy.cost_value(task_t, hlp_t, radio_t, budget_t, detach_trunk=detach_trunk)
 
                 v_loss = 0.5 * (pred_r.squeeze() - target_r) ** 2
                 c_loss = 0.5 * (pred_c.squeeze() - target_c) ** 2
@@ -175,10 +178,6 @@ def structured_priority_ppo_update(
                 total_actor_loss = total_actor_loss + policy_loss
                 total_value_loss = total_value_loss + v_loss
                 total_cost_loss = total_cost_loss + c_loss
-
-                with torch.no_grad():
-                    kl = (old_logp - logp).detach().cpu().item()
-                    kl_accum.append(kl)
 
             bsz = max(1, len(batch))
             loss = (
@@ -193,10 +192,35 @@ def structured_priority_ppo_update(
             grad_norms.append(float(gnorm.item()))
             optimizer.step()
 
+            # Post-update approximate KL estimation using standard Schulman estimator:
+            # D_KL ≈ E[(r - 1) - log(r)], which is strictly non-negative and zero-variance at r=1.
+            batch_kls = []
+            with torch.no_grad():
+                for s in batch:
+                    obs = s["sp_obs"]
+                    task_t = obs["task_t"].to(device)
+                    hlp_t = obs["hlp_t"].to(device)
+                    radio_t = obs["radio_t"].to(device)
+                    budget_t = obs["budget_t"].to(device)
+                    zw = torch.tensor([s["z_w"]], dtype=torch.float32, device=device)
+                    zb = torch.tensor([s["z_b"]], dtype=torch.float32, device=device)
+
+                    new_logp, _ = policy.evaluate_actions(task_t, hlp_t, radio_t, budget_t, zw, zb)
+                    old_logp = torch.tensor(s["old_logp"], dtype=torch.float32, device=device)
+                    log_diff = new_logp - old_logp
+                    r = torch.exp(log_diff)
+                    kl_val = float((r - 1.0 - log_diff).item())
+                    batch_kls.append(kl_val)
+
+            mean_batch_kl = float(np.mean(batch_kls)) if batch_kls else 0.0
+            approx_kls.append(mean_batch_kl)
             actor_losses.append(float((total_actor_loss / bsz).detach().cpu()))
             value_losses.append(float((total_value_loss / bsz).detach().cpu()))
             cost_losses.append(float((total_cost_loss / bsz).detach().cpu()))
-            approx_kls.append(float(np.mean(kl_accum)))
+
+            if target_kl is not None and mean_batch_kl > 1.5 * float(target_kl):
+                early_stopped = True
+                break
 
     costs_all = [float(x) for tr in traces for x in episode_violation_costs(tr)]
     adv_r_all = [s["adv_r"] for s in steps if "adv_r" in s]
@@ -207,6 +231,7 @@ def structured_priority_ppo_update(
         "cost_loss": float(np.mean(cost_losses)) if cost_losses else 0.0,
         "approx_kl": float(np.mean(approx_kls)) if approx_kls else 0.0,
         "grad_norm": float(np.mean(grad_norms)) if grad_norms else 0.0,
+        "early_stopped": bool(early_stopped),
         "mean_epoch_violation_rate": float(np.mean(costs_all)) if costs_all else 0.0,
         "mean_adv_r": float(np.mean(adv_r_all)) if adv_r_all else 0.0,
         "mean_adv_c": float(np.mean(adv_c_all)) if adv_c_all else 0.0,
