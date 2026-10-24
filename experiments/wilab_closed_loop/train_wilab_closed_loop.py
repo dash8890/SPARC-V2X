@@ -7,7 +7,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from task_layer import TaskLayer
+from task_layer import TaskLayer, _normalize_task_radio
 from metrics_logger import enrich_audit_epoch, write_episode_metrics
 from wilab_closed_loop_protocol import atomic_json_write, wait_json
 from controllers.rl.residual_task_policy import ResidualTaskPolicy
@@ -493,7 +493,65 @@ def sample_action(state, layer, policy, safety_only=False, forced_budget=None, a
     return action, logp_sum
 
 
-def run_episode(root, bridge, episode, density, policy, timeout, external_matlab=False, safety_only=False, generation_ms=10.0, allocation_ms=10.0, sim_seed=0, controller_epochs=100, forced_budget=None, tasks_per_source=3, all_eligible=False, forced_byte_budget=None, safety_payload_bytes=1000, simulation_time=20.0, policy_mode="residual", branch_epoch=None, deterministic=False, replay_mode="off", replay_file="", return_trace=False, task_seed=None, governor=None, value_envelope_bytes=250000, spread_task_arrivals=False, unique_sources=False, deadline_multiplier=1.0, max_candidates=None, helper_swap=None, force_pack=None, helper_cpu_lo=2e8, helper_cpu_hi=1e9, cluster_share=None, output_root=None, arrival_mode="legacy"):
+def enrich_assignment_metadata(layer, action, epoch: int) -> dict:
+    """Resolve WiLab vehicle IDs and physical deadline metadata for the bridge.
+
+    The MATLAB accounting layer must not guess ``source_id+1`` / ``helper_id+1``:
+    sources and helpers now occupy disjoint trace vehicles, and the task layer
+    can select any subset of them.  Every executed assignment therefore carries
+    the exact WiLab IDs plus the absolute release/deadline clock.
+    """
+    assignments = list(action.get("assignments") or [])
+    tasks = {int(t.task_id): t for t in layer.tasks}
+    helpers = {int(h.helper_id): h for h in layer.helpers}
+    source_wilab_ids = []
+    packet_counts: dict[int, int] = {}
+    payload_bytes: dict[int, int] = {}
+    for a in assignments:
+        tid = int(a.get("task_id", -1))
+        task = tasks.get(tid)
+        if task is None:
+            continue
+        hid = int(a.get("helper_id", -1))
+        helper = helpers.get(hid)
+        src_wl = int(layer.vehicle_map["sources"][task.source_id])
+        a["source_id"] = int(task.source_id)
+        a["source_wilab_id"] = src_wl
+        if helper is not None:
+            a["helper_id"] = int(helper.helper_id)
+            a["helper_wilab_id"] = int(layer.vehicle_map["helpers"][helper.helper_id])
+        else:
+            a["helper_wilab_id"] = int(hid) + 1
+        a["release_epoch"] = int(task.release_epoch)
+        a["release_ms"] = float(layer.release_ms(task))
+        a["epoch_ms"] = float(layer.epoch_ms)
+        a["deadline_ms"] = float(task.deadline_ms)
+        a["deadline_s"] = float(layer.absolute_deadline_ms(task)) / 1000.0
+        a["packet_count"] = int(layer.packet_count(task))
+        a["computation_packet_bytes"] = int(layer.computation_packet_bytes)
+        a["payload_bytes"] = int(task.payload_bytes)
+        a["task_value"] = float(task.value)
+        source_wilab_ids.append(src_wl)
+        packet_counts[src_wl] = packet_counts.get(src_wl, 0) + int(a["packet_count"])
+        payload_bytes[src_wl] = payload_bytes.get(src_wl, 0) + int(a["payload_bytes"])
+    action["assignments"] = assignments
+    action["executed_assignments"] = list(assignments)
+    action["source_wilab_ids"] = source_wilab_ids
+    action["allowed_sources"] = [int(a["source_id"]) for a in assignments]
+    action["source_packet_ids"] = list(packet_counts.keys())
+    action["source_packet_counts"] = list(packet_counts.values())
+    action["source_payload_bytes"] = list(payload_bytes.values())
+    action["computation_packet_bytes"] = int(layer.computation_packet_bytes)
+    action["computation_segment_bytes"] = int(layer.segment_bytes)
+    action["tb_bytes"] = int(layer.tb_bytes)
+    action["reservation_ms"] = float(layer.reservation_ms)
+    action["reservations_per_epoch"] = int(layer.reservations_per_epoch)
+    action["epoch_ms"] = float(layer.epoch_ms)
+    action["accounting_mode"] = str(action.get("accounting_mode", "payload"))
+    return action
+
+
+def run_episode(root, bridge, episode, density, policy, timeout, external_matlab=False, safety_only=False, generation_ms=10.0, allocation_ms=10.0, sim_seed=0, controller_epochs=100, forced_budget=None, tasks_per_source=3, all_eligible=False, forced_byte_budget=None, safety_payload_bytes=1000, simulation_time=20.0, policy_mode="residual", branch_epoch=None, deterministic=False, replay_mode="off", replay_file="", return_trace=False, task_seed=None, governor=None, value_envelope_bytes=250000, spread_task_arrivals=False, unique_sources=False, deadline_multiplier=1.0, max_candidates=None, helper_swap=None, force_pack=None, helper_cpu_lo=2e8, helper_cpu_hi=1e9, cluster_share=None, output_root=None, arrival_mode="legacy", accounting="payload", computation_packet_bytes=1000, packets_per_epoch=1, trace_path_override=None, r_comm=250.0, reservation_ms=None, tb_bytes=None, segment_bytes=2000, bw_mhz=10, payload_bytes_lo=10_000, payload_bytes_hi=80_000, deadline_ms_lo=30.0, deadline_ms_hi=150.0, cycles_lo=1e7, cycles_hi=1e8):
     # helper_swap (optional diagnostic): {"epoch", "task_id", "from_helper", "to_helper"}
     # force_pack (optional diagnostic): {"epoch", "assignments": [...]} — replace proposal then re-apply governor
     # Applied after the governor on the executed assignment list only. Does not
@@ -513,21 +571,37 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
     cfg_text = cfg_template.read_text(encoding="utf-8")
     cfg_text = re.sub(r"(?m)^(\s*\[rho\]\s+)[^\r\n]+$", rf"\g<1>{float(density):g}", cfg_text)
     cfg.write_text(cfg_text, encoding="utf-8")
+    trace_for_layer = Path(trace_path_override) if trace_path_override else trace
+    reservation_ms_eff = float(allocation_ms) if reservation_ms is None else float(reservation_ms)
     layer = TaskLayer(density, (90000 + episode) if task_seed is None else int(task_seed),
                       tasks_per_source=tasks_per_source,
+                      computation_packet_bytes=computation_packet_bytes,
+                      tb_bytes=(None if tb_bytes is None else int(tb_bytes)),
+                      segment_bytes=int(segment_bytes),
+                      reservation_ms=reservation_ms_eff,
+                      payload_bytes_lo=int(payload_bytes_lo),
+                      payload_bytes_hi=int(payload_bytes_hi),
+                      deadline_ms_lo=float(deadline_ms_lo),
+                      deadline_ms_hi=float(deadline_ms_hi),
+                      cycles_lo=float(cycles_lo),
+                      cycles_hi=float(cycles_hi),
                       spread_arrivals=spread_task_arrivals,
                       controller_epochs=controller_epochs,
                       deadline_multiplier=deadline_multiplier,
                       helper_cpu_lo=helper_cpu_lo,
                       helper_cpu_hi=helper_cpu_hi,
                       cluster_share=cluster_share,
-                      arrival_mode=arrival_mode)
+                      arrival_mode=arrival_mode,
+                      trace_path=trace_for_layer,
+                      epoch_ms=float(allocation_ms),
+                      packets_per_epoch=int(packets_per_epoch),
+                      r_comm=float(r_comm))
     offered_value = sum(float(t.value) for t in layer.tasks)
     bridge.mkdir(parents=True, exist_ok=True)
     for p in bridge.glob("*.json"): p.unlink()
     matlab = (root / "experiments" / "wilab_closed_loop" / "run_wilab_closed_loop_episode.m").as_posix()
     hook_dir = (root / "experiments" / "wilab_closed_loop").as_posix()
-    cmd = f"cd('{root.as_posix()}'); addpath('{hook_dir}','-begin'); run_wilab_closed_loop_episode('{cfg.as_posix()}','{trace.as_posix()}','{out.as_posix()}','{bridge.as_posix()}',{episode},0,{generation_ms/1000.0},{allocation_ms/1000.0},{sim_seed},{controller_epochs},{int(safety_payload_bytes)},{float(simulation_time)},'{replay_mode}','{replay_file}')"
+    cmd = f"cd('{root.as_posix()}'); addpath('{hook_dir}','-begin'); run_wilab_closed_loop_episode('{cfg.as_posix()}','{trace.as_posix()}','{out.as_posix()}','{bridge.as_posix()}',{episode},0,{generation_ms/1000.0},{allocation_ms/1000.0},{sim_seed},{controller_epochs},{int(safety_payload_bytes)},{float(simulation_time)},'{replay_mode}','{replay_file}',{float(bw_mhz)},{reservation_ms_eff/1000.0})"
     log_path = out / "matlab.log"
     log_handle = log_path.open("w", encoding="utf-8")
     # MATLAB is launched from its own installation directory.  Starting it
@@ -713,6 +787,10 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                     helper_payload_bytes_tmp[hid] = helper_payload_bytes_tmp.get(hid, 0) + int(assn.get("payload_bytes", 0))
                 action["_helper_packet_counts_post_swap"] = helper_packet_counts_tmp
                 action["_helper_payload_bytes_post_swap"] = helper_payload_bytes_tmp
+            # Authoritative WiLab IDs and physical release/deadline metadata.
+            # This runs after governor/force-pack/helper-swap so every executed
+            # assignment points at the final source/helper vehicle.
+            enrich_assignment_metadata(layer, action, epoch)
             obs_vec = state_vector(state, epoch, controller_epochs, value_envelope_bytes if forced_byte_budget is None else forced_byte_budget)
             value = policy.value(obs_vec) if hasattr(policy, 'value') else torch.tensor(0.0)
             cost_value = policy.cost_value(obs_vec) if hasattr(policy, 'cost_value') else torch.tensor(0.0)
@@ -742,7 +820,14 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                                   for c in layer.candidates(float(state.get("cbr", 0.0)), 0.0)}
                 delivered_tasks = [a["task_id"] for a in action["assignments"]
                                    if source_by_task.get(a["task_id"]) in delivered_sources]
-            layer.apply_radio_outcomes(action["assignments"], delivered_tasks, 10.0)
+            task_radio = _normalize_task_radio(result.get("task_radio"))
+            layer.apply_radio_outcomes(
+                action["assignments"], delivered_tasks, float(allocation_ms),
+                task_radio=task_radio, accounting=accounting,
+            )
+            payload_complete_tasks = sorted(
+                int(tid) for tid, rec in task_radio.items() if rec.get("complete")
+            )
             reward = advance_reward + layer.completed_value() - before
             helper_packet_counts = {}
             helper_payload_bytes = {}
@@ -802,10 +887,33 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
                 "policy_mode": action.get("policy_mode"),
                 "reward": reward,
                 "delivered_source_ids": delivered_ids,
+                "payload_complete_task_ids": payload_complete_tasks,
+                "payload_rx_by_task": {
+                    str(tid): [int(rec.get("received_packets", 0)), int(rec.get("required_packets", 0))]
+                    for tid, rec in task_radio.items()
+                },
+                "accounting_mode": accounting,
+                "packet_overflow_losses": result.get("packet_overflow_losses", 0),
+                "packet_tag_deficits": result.get("packet_tag_deficits", 0),
+                "packet_capture_missing": result.get("packet_capture_missing", 0),
+                "packet_paced": result.get("packet_paced", 0),
+                "packet_retransmitted": result.get("packet_retransmitted", 0),
+                "packet_cancelled": result.get("packet_cancelled", 0),
+                "packet_dropped": result.get("packet_dropped", 0),
+                "packet_pending": result.get("packet_pending", 0),
+                "packet_units_credited": result.get("packet_units_credited", 0),
+                "packet_units_duplicate": result.get("packet_units_duplicate", 0),
+                "window_prr": state.get("window_prr", state.get("prr")),
+                "window_prr_long": state.get("window_prr_long", state.get("window_prr", state.get("prr"))),
+                "window_prr_long_valid": state.get("window_prr_long_valid", state.get("window_prr_valid", False)),
+                "window_attempts": state.get("window_attempts", 0),
+                "window_duration_ms": state.get("window_duration_ms", 0.0),
+                "epoch_ms": float(layer.epoch_ms),
+                "computation_packet_bytes": int(layer.computation_packet_bytes),
             }
             enrich_audit_epoch(
                 epoch_rec,
-                delivered_task_ids=delivered_tasks,
+                delivered_task_ids=(delivered_tasks if accounting == "legacy" else payload_complete_tasks),
                 gate_blocked=bool(action.get("admission_gate_blocked")),
             )
             audit.append(epoch_rec)
@@ -910,6 +1018,15 @@ def run_episode(root, bridge, episode, density, policy, timeout, external_matlab
         "deadline_multiplier": deadline_multiplier,
         "max_candidates": max_candidates,
         "governor_enabled": governor is not None,
+        "epoch_ms": float(allocation_ms),
+        "computation_packet_bytes": int(computation_packet_bytes),
+        "packets_per_epoch": int(packets_per_epoch),
+        "accounting": str(accounting),
+        "trace_path": str(trace_for_layer),
+        "n_sources": int(layer.n_sources),
+        "n_helpers": int(layer.n_helpers),
+        "source_wilab_ids": [int(layer.vehicle_map["sources"][i]) for i in range(layer.n_sources)],
+        "helper_wilab_ids": [int(layer.vehicle_map["helpers"][j]) for j in range(layer.n_helpers)],
     }
     try:
         write_episode_metrics(

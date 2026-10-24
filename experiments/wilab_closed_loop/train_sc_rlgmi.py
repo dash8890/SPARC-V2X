@@ -40,9 +40,20 @@ from controllers.rl.sc_rlgmi.sc_rlgmi_core import (
 )
 from controllers.rl.sc_rlgmi.sc_rlgmi_policy import SCRLGMIPolicy
 
-TRAIN_SEEDS = [73200, 73201]
+# Safe, non-degenerate corrected-environment training seeds (screened at
+# 5 ms / 20 MHz / 300 B TB / 10-30 kB): 73211 V=11.22 P_viol_long=0.00,
+# 73219 V=13.72 P_viol_long=0.00.  The original 73200/73201 pair was
+# degenerate (1-2 completions, 100% safety violation).
+# 73212 is retained as a high-value, safety-stressed seed (V=23.25,
+# P_viol_long=0.168) so the counterfactual set contains non-zero
+# safety-driven alternatives; 73219 is the safe reference anchor.
+TRAIN_SEEDS = [73212, 73219]
 DEV_SEEDS = [73300, 73301, 73302, 73303]
-GUARDED_B4_TARGET = 49.15
+# Corrected-environment guarded reference baseline (B1/B3/B5' value-density
+# reference, dev seeds 73300-73303): 17.03, 16.59, 8.74, 15.58 -> mean 14.486.
+# The old 49.15 target belonged to the legacy 10 MHz / 2 kB / 20 ms workload
+# and is not comparable.
+GUARDED_B4_TARGET = 14.486
 SAFETY_LIMIT = 0.020
 
 
@@ -53,6 +64,7 @@ def run_single_ep(
     out_dir: Path,
     deterministic: bool = True,
     force_pack: Optional[Dict[str, Any]] = None,
+    simulation_time: float = 12.0,
 ) -> Tuple[float, float, List[Dict[str, Any]]]:
     """Runs a single closed-loop simulation episode, optionally forcing a pack at an epoch."""
     t_seed = 186100 + (seed - 73300) if seed >= 73300 else 191000 + (seed - 73200)
@@ -80,7 +92,7 @@ def run_single_ep(
         False,
         175000,
         300,
-        12.0,
+        simulation_time,
         "scql",  # Uses _sequential_match hook
         None,
         deterministic,
@@ -96,18 +108,34 @@ def run_single_ep(
         None,
         helper_swap=None,
         force_pack=force_pack,
-        helper_cpu_lo=2e8,
-        helper_cpu_hi=1e9,
+        helper_cpu_lo=1e9,
+        helper_cpu_hi=4e9,
+        tb_bytes=300,
+        segment_bytes=2000,
+        reservation_ms=5.0,
+        bw_mhz=20,
+        payload_bytes_lo=10_000,
+        payload_bytes_hi=30_000,
+        deadline_ms_lo=100.0,
+        deadline_ms_hi=500.0,
+        cycles_lo=5e6,
+        cycles_hi=5e7,
+        packets_per_epoch=4,
         output_root=ep_dir,
         arrival_mode="streaming",
     )
 
     audit_file = ep_dir / f"episode_{eid:04d}" / "bridge_audit.json"
     audit = json.loads(audit_file.read_text(encoding="utf-8")) if audit_file.is_file() else []
-    valid = [e for e in audit if e.get("cbr_valid") and e.get("delay_valid")]
-    prrs = [float(e.get("window_prr", e.get("prr", 1.0))) for e in valid]
-    viols = sum(1 for p in prrs if p < 0.95)
-    pv = viols / len(valid) if valid else 1.0
+    summary_file = ep_dir / f"episode_{eid:04d}" / "episode_summary.json"
+    if summary_file.is_file():
+        ep_summary = json.loads(summary_file.read_text(encoding="utf-8"))
+        pv = float(ep_summary.get("safety_P_viol_long", ep_summary.get("safety_P_viol", 1.0)))
+    else:
+        valid = [e for e in audit if e.get("cbr_valid") and e.get("delay_valid")]
+        prrs = [float(e.get("window_prr", e.get("prr", 1.0))) for e in valid]
+        viols = sum(1 for p in prrs if p < 0.95)
+        pv = viols / len(valid) if valid else 1.0
 
     return comp_val, pv, audit
 
@@ -137,7 +165,7 @@ def collect_counterfactual_rollouts(
         policy.record_decisions = True
         policy.recorded_decisions.clear()
         v_ref_full, pv_ref_full, audit_ref = run_single_ep(
-            policy, seed, eid, ref_out, deterministic=True
+            policy, seed, eid, ref_out, deterministic=True, simulation_time=2.5
         )
         policy.record_decisions = False
         recorded = dict(policy.recorded_decisions)
@@ -161,22 +189,41 @@ def collect_counterfactual_rollouts(
             b_safe = rec["b_safe"]
             oracle = policy._make_feasibility_oracle(edge_map, b_safe=b_safe)
 
-            # Generate neighborhood moves
+            # Generate neighborhood moves.  Prefer alternatives that change the
+            # task set (add/drop/replace) over pure helper reassignments:
+            # reassigning the same task usually still completes it and yields
+            # a degenerate Delta_G = 0 target.
             cand_neighbors = neighbors(d_state, ref_matching, oracle)
             if not cand_neighbors:
                 continue
 
-            sub_neighbors = cand_neighbors[:max_neighbors_per_epoch]
+            ref_tasks = {k for k, _ in ref_matching}
+
+            def _alt_rank(m):
+                same_tasks = {k for k, _ in m} == ref_tasks
+                same_size = len(m) == len(ref_matching)
+                return (same_tasks, same_size, -len(m), m)
+
+            ordered = sorted(cand_neighbors, key=_alt_rank)
+            sub_neighbors = ordered[:max_neighbors_per_epoch]
             print(f"    Epoch {ep:02d}: Evaluated {len(cand_neighbors)} neighbors -> branching top {len(sub_neighbors)}")
 
             for alt_matching in sub_neighbors:
+                # An empty matching is a valid MDP action but it produces a
+                # zero-byte action file that the MATLAB bridge cannot consume
+                # ("Invalid message - buffer too small 0 < 8").  It also has
+                # no counterfactual content when the reference already
+                # admitted the only completion, so skip it.
+                if not alt_matching:
+                    continue
                 eid += 1
                 alt_pack = [dict(edge_map[e].raw_dict) for e in alt_matching if e in edge_map]
                 force_spec = {"epoch": ep, "assignments": alt_pack}
                 branch_out = out_dir / f"branch_s{seed}_ep{ep:02d}_m{eid}"
 
                 v_alt, pv_alt, _ = run_single_ep(
-                    policy, seed, eid, branch_out, deterministic=True, force_pack=force_spec
+                    policy, seed, eid, branch_out, deterministic=True,
+                    force_pack=force_spec, simulation_time=2.5,
                 )
 
                 delta_g = float(v_alt - v_ref_full)
@@ -221,7 +268,11 @@ def evaluate_sc_rlgmi_on_dev(
         prrs = [float(e.get("window_prr", e.get("prr", 1.0))) for e in valid]
         mean_prr = float(np.mean(prrs)) if prrs else 1.0
 
-        modes = [e.get("scql_meta", {}).get("selected_mode") for e in audit if "scql_meta" in e]
+        modes = []
+        for e in audit:
+            meta = e.get("scql_meta")
+            if isinstance(meta, dict):
+                modes.append(meta.get("selected_mode"))
         overrides = sum(1 for m in modes if m == "sc_rlgmi_alternative")
         ref_kept = sum(1 for m in modes if m == "reference_b4")
 

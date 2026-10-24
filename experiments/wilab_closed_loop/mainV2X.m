@@ -253,11 +253,23 @@ while timeManagement.timeNow < simParams.simulationTime
                 radioState.active_vehicles = length(stationManagement.activeIDsCV2X);
                 [radioState.cbr, radioState.p95_delay_ms, radioState.cbr_valid, ...
                     radioState.delay_valid, radioState.cumulative_prr, radioState.cumulative_prr_valid, ...
-                    radioState.n_reassign, radioState.window_prr, radioState.window_prr_valid] = ...
+                    radioState.n_reassign, radioState.window_prr, radioState.window_prr_valid, ...
+                    radioState.window_prr_long, radioState.window_prr_long_valid, ...
+                    radioState.window_attempts, radioState.window_duration_ms] = ...
                     wilab_closed_loop_radio_metrics(stationManagement,outputValues,outParams);
                 radioState.prr = radioState.window_prr;
                 radioState.prr_valid = radioState.window_prr_valid || radioState.cumulative_prr_valid;
                 radioState.radio_load = radioState.cbr;
+                % Causal queue observables for the backlog-aware safety guard.
+                % Measured at the controller boundary, before this epoch's
+                % admission is injected, so the controller never sees future
+                % traffic.
+                radioState.pending_packets = sum(stationManagement.pckBuffer(:));
+                if isempty(WILAB_CLOSED_LOOP) || ~isfield(WILAB_CLOSED_LOOP,'instrument_scheduled_attempts')
+                    radioState.scheduled_attempts = 0;
+                else
+                    radioState.scheduled_attempts = WILAB_CLOSED_LOOP.instrument_scheduled_attempts;
+                end
                 radioValid = radioState.cbr_valid && radioState.delay_valid && radioState.prr_valid;
                 if ~isempty(WILAB_CLOSED_LOOP) && isfield(WILAB_CLOSED_LOOP,'bridgeDir') && ...
                         (timeManagement.timeNow < WILAB_CLOSED_LOOP.warmupSeconds-1e-9 || ~radioValid)
@@ -281,6 +293,14 @@ while timeManagement.timeNow < simParams.simulationTime
             elseif isfield(appParams,'allocationPeriod') && ~isempty(appParams.allocationPeriod)
                 controlInterval = appParams.allocationPeriod;
             end
+            % The Python controller clock starts at its epoch 0, which may be
+            % after the WiLab warm-up.  Record the physical time of that first
+            % callback so absolute task deadlines (expressed on the Python
+            % clock) can be translated to WiLab time.
+            if ~isempty(WILAB_CLOSED_LOOP) && isfield(WILAB_CLOSED_LOOP,'epoch') && ...
+                    WILAB_CLOSED_LOOP.epoch == 0 && ~isfield(WILAB_CLOSED_LOOP,'controllerStartTime')
+                WILAB_CLOSED_LOOP.controllerStartTime = timeManagement.timeNow;
+            end
             if isfield(appParams,'closedLoopBridgeDir') && ...
                     timeManagement.timeNow >= WILAB_CLOSED_LOOP.warmupSeconds-1e-9 && ...
                     radioValid && ...
@@ -291,11 +311,23 @@ while timeManagement.timeNow < simParams.simulationTime
                 radioState.active_vehicles = length(stationManagement.activeIDsCV2X);
                 [radioState.cbr, radioState.p95_delay_ms, radioState.cbr_valid, ...
                     radioState.delay_valid, radioState.cumulative_prr, radioState.cumulative_prr_valid, ...
-                    radioState.n_reassign, radioState.window_prr, radioState.window_prr_valid] = ...
+                    radioState.n_reassign, radioState.window_prr, radioState.window_prr_valid, ...
+                    radioState.window_prr_long, radioState.window_prr_long_valid, ...
+                    radioState.window_attempts, radioState.window_duration_ms] = ...
                     wilab_closed_loop_radio_metrics(stationManagement,outputValues,outParams);
                 radioState.prr = radioState.window_prr;
                 radioState.prr_valid = radioState.window_prr_valid || radioState.cumulative_prr_valid;
                 radioState.radio_load = radioState.cbr;
+                % Causal queue observables for the backlog-aware safety guard.
+                % Measured at the controller boundary, before this epoch's
+                % admission is injected, so the controller never sees future
+                % traffic.
+                radioState.pending_packets = sum(stationManagement.pckBuffer(:));
+                if isempty(WILAB_CLOSED_LOOP) || ~isfield(WILAB_CLOSED_LOOP,'instrument_scheduled_attempts')
+                    radioState.scheduled_attempts = 0;
+                else
+                    radioState.scheduled_attempts = WILAB_CLOSED_LOOP.instrument_scheduled_attempts;
+                end
                 action = wilab_closed_loop_callback(appParams.closedLoopBridgeDir, ...
                     appParams.closedLoopEpisode, appParams.closedLoopEpoch, ...
                     radioState, struct([]), appParams.closedLoopSafeBudget);
@@ -320,11 +352,23 @@ while timeManagement.timeNow < simParams.simulationTime
                 radioState.active_vehicles = length(stationManagement.activeIDsCV2X);
                 [radioState.cbr, radioState.p95_delay_ms, radioState.cbr_valid, ...
                     radioState.delay_valid, radioState.cumulative_prr, radioState.cumulative_prr_valid, ...
-                    radioState.n_reassign, radioState.window_prr, radioState.window_prr_valid] = ...
+                    radioState.n_reassign, radioState.window_prr, radioState.window_prr_valid, ...
+                    radioState.window_prr_long, radioState.window_prr_long_valid, ...
+                    radioState.window_attempts, radioState.window_duration_ms] = ...
                     wilab_closed_loop_radio_metrics(stationManagement,outputValues,outParams);
                 radioState.prr = radioState.window_prr;
                 radioState.prr_valid = radioState.window_prr_valid || radioState.cumulative_prr_valid;
                 radioState.radio_load = radioState.cbr;
+                % Causal queue observables for the backlog-aware safety guard.
+                % Measured at the controller boundary, before this epoch's
+                % admission is injected, so the controller never sees future
+                % traffic.
+                radioState.pending_packets = sum(stationManagement.pckBuffer(:));
+                if isempty(WILAB_CLOSED_LOOP) || ~isfield(WILAB_CLOSED_LOOP,'instrument_scheduled_attempts')
+                    radioState.scheduled_attempts = 0;
+                else
+                    radioState.scheduled_attempts = WILAB_CLOSED_LOOP.instrument_scheduled_attempts;
+                end
                 action = wilab_closed_loop_callback(WILAB_CLOSED_LOOP.bridgeDir, ...
                     WILAB_CLOSED_LOOP.episode, WILAB_CLOSED_LOOP.epoch, ...
                     radioState, struct([]), WILAB_CLOSED_LOOP.safeBudget);
@@ -387,6 +431,11 @@ while timeManagement.timeNow < simParams.simulationTime
             %printDebugEvents(timeEvent,'New packet, LTE',idEvent);
        
             stationManagement.pckBuffer(idEvent) = stationManagement.pckBuffer(idEvent)+1;
+            % Keep the payload-accounting FIFO aligned with the beacon that
+            % was just appended to the shared WiLab queue.
+            if ~isempty(WILAB_CLOSED_LOOP)
+                wilab_closed_loop_packet_accounting('push_beacon', idEvent);
+            end
             %% From version 6.2, the following corrects a bug
             % The buffer may include a packet that is being transmitted
             % If the buffer already includes a packet, this needs to be

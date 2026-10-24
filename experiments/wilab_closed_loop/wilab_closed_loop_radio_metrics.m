@@ -1,15 +1,29 @@
-function [cbr,p95DelayMs,cbrValid,delayValid,prr,prrValid,nReassign,windowPrr,windowPrrValid] = wilab_closed_loop_radio_metrics(stationManagement,outputValues,outParams)
+function [cbr,p95DelayMs,cbrValid,delayValid,prr,prrValid,nReassign, ...
+    windowPrr,windowPrrValid,windowPrrLong,windowPrrLongValid, ...
+    windowAttempts,windowDurationMs] = ...
+    wilab_closed_loop_radio_metrics(stationManagement,outputValues,outParams)
 % Extract controller-facing radio metrics without treating WiLab sentinels
 % as measurements.  cbrCV2Xvalues uses -1 before a sensing interval exists.
+%
+% windowPrr is the small per-callback delta used by the controller.  The
+% safety claim instead uses windowPrrLong: a rolling window of at least
+% LONG_MIN_ATTEMPTS decode attempts (or LONG_MAX_EPOCHS callbacks), which is
+% statistically meaningful at beacon rates of a few packets per 100 ms.
 cbr = 0; cbrValid = false;
 prr = 0; prrValid = false;
 nReassign = 0;
 windowPrr = 1.0; windowPrrValid = false;
+windowPrrLong = 1.0; windowPrrLongValid = false;
+windowAttempts = 0; windowDurationMs = 0.0;
+LONG_MIN_ATTEMPTS = 100;
+LONG_MAX_EPOCHS = 250;          % 5 s at the 20 ms control cadence
 
 global WILAB_CLOSED_LOOP;
 if isempty(WILAB_CLOSED_LOOP), WILAB_CLOSED_LOOP = struct(); end
 if ~isfield(WILAB_CLOSED_LOOP,'prevOk'), WILAB_CLOSED_LOOP.prevOk = 0; end
 if ~isfield(WILAB_CLOSED_LOOP,'prevErr'), WILAB_CLOSED_LOOP.prevErr = 0; end
+if ~isfield(WILAB_CLOSED_LOOP,'prrLongOk'), WILAB_CLOSED_LOOP.prrLongOk = []; end
+if ~isfield(WILAB_CLOSED_LOOP,'prrLongErr'), WILAB_CLOSED_LOOP.prrLongErr = []; end
 
 if isfield(outputValues,'NcorrectlyTxBeaconsTOT') && isfield(outputValues,'NerrorsTOT')
     ok = sum(double(outputValues.NcorrectlyTxBeaconsTOT(:)));
@@ -26,12 +40,34 @@ if isfield(outputValues,'NcorrectlyTxBeaconsTOT') && isfield(outputValues,'Nerro
         WILAB_CLOSED_LOOP.prevOk = ok;
         WILAB_CLOSED_LOOP.prevErr = err;
         WILAB_CLOSED_LOOP.lastWindowPrr = windowPrr;
+        WILAB_CLOSED_LOOP.prrLongOk(end+1) = max(0, dOk);
+        WILAB_CLOSED_LOOP.prrLongErr(end+1) = max(0, dErr);
+        if numel(WILAB_CLOSED_LOOP.prrLongOk) > LONG_MAX_EPOCHS
+            WILAB_CLOSED_LOOP.prrLongOk = WILAB_CLOSED_LOOP.prrLongOk(end-LONG_MAX_EPOCHS+1:end);
+            WILAB_CLOSED_LOOP.prrLongErr = WILAB_CLOSED_LOOP.prrLongErr(end-LONG_MAX_EPOCHS+1:end);
+        end
     elseif isfield(WILAB_CLOSED_LOOP, 'lastWindowPrr')
         windowPrr = WILAB_CLOSED_LOOP.lastWindowPrr;
         windowPrrValid = true;
     else
         windowPrr = 1.0;
         windowPrrValid = true;
+    end
+    longOk = sum(WILAB_CLOSED_LOOP.prrLongOk);
+    longErr = sum(WILAB_CLOSED_LOOP.prrLongErr);
+    windowAttempts = longOk + longErr;
+    epochMs = 20.0;
+    if isfield(WILAB_CLOSED_LOOP,'allocationPeriod') && ~isempty(WILAB_CLOSED_LOOP.allocationPeriod)
+        epochMs = 1000.0 * double(WILAB_CLOSED_LOOP.allocationPeriod);
+    end
+    windowDurationMs = numel(WILAB_CLOSED_LOOP.prrLongOk) * epochMs;
+    if windowAttempts >= LONG_MIN_ATTEMPTS
+        windowPrrLong = longOk / windowAttempts;
+        windowPrrLongValid = true;
+    elseif windowAttempts > 0
+        % Report the partial window but mark it invalid for the claim.
+        windowPrrLong = longOk / windowAttempts;
+        windowPrrLongValid = false;
     end
 end
 if isfield(stationManagement,'cbrCV2Xvalues') && ~isempty(stationManagement.cbrCV2Xvalues)

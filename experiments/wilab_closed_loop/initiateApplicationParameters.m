@@ -16,6 +16,20 @@ if appParams.allocationPeriod<=0 || appParams.allocationPeriod >1 || mod(appPara
     error('Error: isolated allocationPeriod must be a positive 10-ms multiple <=1 s');
 end
 
+% [reservationInterval]
+% Semi-persistent PSSCH reservation interval (s).  This is deliberately
+% separate from allocationPeriod so the 20 ms controller clock can coexist
+% with a 5 ms PHY reservation clock.  Legacy configurations default to the
+% allocation period, preserving the vendor behaviour.
+[appParams,varargin] = addNewParam(appParams,'reservationInterval',appParams.allocationPeriod,'Semi-persistent reservation interval (s)','double',fileCfg,varargin{1});
+reservationMs = round(appParams.reservationInterval*1000);
+if appParams.reservationInterval<=0 || abs(reservationMs*0.001 - appParams.reservationInterval) > 1e-9
+    error('Error: "appParams.reservationInterval" must be a positive 1-ms multiple');
+end
+if appParams.reservationInterval > appParams.allocationPeriod + 1e-12
+    error('Error: "appParams.reservationInterval" cannot exceed "appParams.allocationPeriod"');
+end
+
 % [variabilityGenerationInterval]
 % Interval of variability of the generationInterval from vehicle to vehicle
 % Each (11p) vehicle will have a periodicity uniformly randomly chosen

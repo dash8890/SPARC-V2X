@@ -38,40 +38,48 @@ if ~isfield(WILAB_CLOSED_LOOP,'instrument_enqueued_packets'), WILAB_CLOSED_LOOP.
 if ~isfield(WILAB_CLOSED_LOOP,'instrument_enqueued_bytes'), WILAB_CLOSED_LOOP.instrument_enqueued_bytes = 0; end
 if ~isfield(WILAB_CLOSED_LOOP,'instrument_scheduled_attempts'), WILAB_CLOSED_LOOP.instrument_scheduled_attempts = 0; end
 if ~isfield(WILAB_CLOSED_LOOP,'instrument_pending_packets'), WILAB_CLOSED_LOOP.instrument_pending_packets = 0; end
-if ~isempty(WILAB_CLOSED_LOOP) && isfield(WILAB_CLOSED_LOOP,'action') && isfield(WILAB_CLOSED_LOOP.action,'allowed_sources')
-    % Inject each admitted task's payload-faithful packet count once at the
-    % start of its control interval.  The action remains visible to WiLab
-    % for subsequent TTIs, but must not be re-added every TTI.
+% Read the fate of the packets whose last replica was sent in the previous
+% TTI, before WiLab resets pckReceived for packets starting now.  Then bring
+% the parallel tag FIFO back in sync with pckBuffer (queue overflow or
+% vehicle exit drops packets without completing them).
+if ~isempty(WILAB_CLOSED_LOOP)
+    captureEpoch = 0;
+    if isfield(WILAB_CLOSED_LOOP,'epoch'), captureEpoch = WILAB_CLOSED_LOOP.epoch; end
+    % Read the fate of packets whose last replica was sent in the previous
+    % TTI, then bring the tag FIFO back in sync with WiLab's queue.
+    wilab_closed_loop_packet_accounting('capture', stationManagement, ...
+        timeManagement.timeNow, captureEpoch);
+    wilab_closed_loop_packet_accounting('reconcile', stationManagement, ...
+        timeManagement.timeNow);
+end
+if ~isempty(WILAB_CLOSED_LOOP) && isfield(WILAB_CLOSED_LOOP,'action')
+    % Register each admitted task's payload once per control interval.  The
+    % payload then waits in the accounting layer's pending queue; it is never
+    % dumped into WiLab's single-packet pckBuffer as a burst.
     injectNow = ~isfield(WILAB_CLOSED_LOOP,'lastInjectedEpoch') || ...
                 ~isfield(WILAB_CLOSED_LOOP,'lastEpoch') || ...
                 WILAB_CLOSED_LOOP.lastInjectedEpoch ~= WILAB_CLOSED_LOOP.lastEpoch;
-    if injectNow && isfield(WILAB_CLOSED_LOOP.action,'source_packet_ids') && ...
-            isfield(WILAB_CLOSED_LOOP.action,'source_packet_counts')
-        sourceIds = double(WILAB_CLOSED_LOOP.action.source_packet_ids(:)) + 1;
-        WILAB_CLOSED_LOOP.computation_source_ids = sourceIds(:)';
-        packetCounts = double(WILAB_CLOSED_LOOP.action.source_packet_counts(:));
-        n = min(numel(sourceIds), numel(packetCounts));
-        for k = 1:n
-            id = round(sourceIds(k));
-            if id < 1 || id > numel(stationManagement.pckBuffer), continue; end
-            wasEmpty = stationManagement.pckBuffer(id) < 1;
-            stationManagement.pckBuffer(id) = stationManagement.pckBuffer(id) + max(0, round(packetCounts(k)));
-            if wasEmpty, stationManagement.pckNextAttempt(id) = 1; end
-        end
-        WILAB_CLOSED_LOOP.instrument_enqueued_packets = WILAB_CLOSED_LOOP.instrument_enqueued_packets + sum(max(0, round(packetCounts(1:n))));
-        if isfield(WILAB_CLOSED_LOOP.action,'source_payload_bytes')
-            pb = double(WILAB_CLOSED_LOOP.action.source_payload_bytes(:));
-            WILAB_CLOSED_LOOP.instrument_enqueued_bytes = WILAB_CLOSED_LOOP.instrument_enqueued_bytes + sum(max(0, pb(1:min(n,numel(pb)))));
-        end
+    if injectNow
+        stationManagement = wilab_closed_loop_packet_accounting('register', ...
+            WILAB_CLOSED_LOOP.action, stationManagement, timeManagement.timeNow);
         WILAB_CLOSED_LOOP.lastInjectedEpoch = WILAB_CLOSED_LOOP.lastEpoch;
-    else
-        allowed = double(WILAB_CLOSED_LOOP.action.allowed_sources(:)) + 1; % legacy one-packet mode.
-        allowed = allowed(allowed >= 1 & allowed <= numel(stationManagement.pckBuffer));
-        wasEmpty = stationManagement.pckBuffer(allowed) < 1;
-        stationManagement.pckBuffer(allowed) = max(stationManagement.pckBuffer(allowed), 1);
-        stationManagement.pckNextAttempt(allowed(wasEmpty)) = 1;
+        if isfield(WILAB_CLOSED_LOOP.action,'source_wilab_ids')
+            sourceIds = double(WILAB_CLOSED_LOOP.action.source_wilab_ids(:))';
+        elseif isfield(WILAB_CLOSED_LOOP.action,'source_packet_ids')
+            sourceIds = double(WILAB_CLOSED_LOOP.action.source_packet_ids(:))' + 1;
+        else
+            sourceIds = [];
+        end
+        WILAB_CLOSED_LOOP.computation_source_ids = sourceIds;
     end
-    idLteHasPck = stationManagement.activeIDsCV2X(stationManagement.pckBuffer(stationManagement.activeIDsCV2X) >= 1);
+    % Pace at most one payload unit per source into the Mode-2 queue.  The
+    % accounting layer only admits a packet when its reservation precedes the
+    % next safety beacon, so the single-packet queue cannot overflow.
+    stationManagement = wilab_closed_loop_packet_accounting('pace', ...
+        stationManagement, timeManagement, appParams, phyParams, ...
+        timeManagement.timeNow);
+    idLteHasPck = stationManagement.activeIDsCV2X( ...
+        stationManagement.pckBuffer(stationManagement.activeIDsCV2X) >= 1);
 end
 for idLte = idLteHasPck'    
     % A source may now have several queued computation packets, while the
@@ -125,6 +133,12 @@ if ~isempty(stationManagement.transmittingIDsCV2X)
     stationManagement.pckNextAttempt(stationManagement.transmittingIDsCV2X) = stationManagement.pckNextAttempt(stationManagement.transmittingIDsCV2X) + 1;
     txIDlastTx = stationManagement.transmittingIDsCV2X(stationManagement.pckNextAttempt(stationManagement.transmittingIDsCV2X)>stationManagement.cv2xNumberOfReplicas(stationManagement.transmittingIDsCV2X));
     stationManagement.pckBuffer(txIDlastTx) = stationManagement.pckBuffer(txIDlastTx)-1;
+    % The decode of this last replica happens at the end of this TTI.  Flag
+    % the packets so the next TTI start can read their reception state
+    % before pckReceived is reset for the following packet.
+    if ~isempty(txIDlastTx)
+        wilab_closed_loop_packet_accounting('mark_final', txIDlastTx);
+    end
     % Start the next queued packet at its first replica/reservation attempt.
     stationManagement.pckNextAttempt(txIDlastTx) = 1;
     % reset of pckReceive and cumulativeSINR

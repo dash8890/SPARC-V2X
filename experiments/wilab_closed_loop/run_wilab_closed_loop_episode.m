@@ -1,4 +1,4 @@
-function run_wilab_closed_loop_episode(configFile, traceFile, outputFolder, bridgeDir, episode, safeBudget, generationInterval, allocationPeriod, seed, controllerEpochs, safetyPayloadBytes, simulationTime, replayMode, replayFile)
+function run_wilab_closed_loop_episode(configFile, traceFile, outputFolder, bridgeDir, episode, safeBudget, generationInterval, allocationPeriod, seed, controllerEpochs, safetyPayloadBytes, simulationTime, replayMode, replayFile, bwMHz, reservationInterval)
 % Run one isolated WiLab episode with the Python action bridge enabled.
 global WILAB_CLOSED_LOOP;
 WILAB_CLOSED_LOOP.bridgeDir = bridgeDir;
@@ -29,6 +29,12 @@ if nargin < 11 || isempty(safetyPayloadBytes), safetyPayloadBytes = 1000; end
 if nargin < 12 || isempty(simulationTime), simulationTime = 20; end
 if nargin < 13 || isempty(replayMode), replayMode = 'off'; end
 if nargin < 14, replayFile = ''; end
+% Corrected physical configuration: 20 MHz carrier and a 5 ms semi-persistent
+% reservation, while allocationPeriod remains the 20 ms controller clock.
+% Legacy callers omit these trailing arguments and keep 10 MHz / the
+% allocation period.
+if nargin < 15 || isempty(bwMHz), bwMHz = 10; end
+if nargin < 16 || isempty(reservationInterval), reservationInterval = allocationPeriod; end
 
 % This file lives in <repo>/experiments/wilab_closed_loop; three parents is repo.
 root = fileparts(fileparts(fileparts(mfilename('fullpath'))));
@@ -41,6 +47,7 @@ if strcmpi(replayMode,'record'), wilab_event_replay('setup_record',replayFile);
 elseif strcmpi(replayMode,'replay'), wilab_event_replay('setup_replay',replayFile); end
 WiLabV2Xsim(configFile,'outputFolder',outputFolder,'filenameTrace',traceFile, ...
     'Technology','5G-V2X','MCS_NR',11,'SCS_NR',15,'beaconSizeBytes',safetyPayloadBytes, ...
+    'BwMHz',bwMHz,'reservationInterval',reservationInterval, ...
     'simulationTime',simulationTime,'allocationPeriod',allocationPeriod,'generationInterval',generationInterval, ...
     'seed',seed, ...
     'sizeSubchannel',10, ...

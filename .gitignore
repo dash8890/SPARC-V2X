@@ -48,6 +48,10 @@ tests/*
 !tests/test_counterfactual_preference_loss.py
 !tests/test_scql_architecture.py
 !tests/test_sc_rlgmi.py
+!tests/test_nr_sidelink.py
+!tests/test_corrected_contract.py
+!tests/test_payload_accounting.py
+!tests/test_packet_accounting.m
 analysis/
 mobility/
 

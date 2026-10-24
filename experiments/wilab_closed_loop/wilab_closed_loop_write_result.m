@@ -18,8 +18,22 @@ result.safety_p95_delay_cumulative_ms = 0;
 result.safety_delay_hist_cumulative = [];
 result.delay_resolution_ms = 1.0;
 result.radio_events = struct([]);
+result.task_radio = struct([]);
+result.packet_overflow_losses = 0;
+result.packet_tag_deficits = 0;
+result.packet_capture_missing = 0;
+result.packet_paced = 0;
+result.packet_retransmitted = 0;
+result.packet_cancelled = 0;
+result.packet_dropped = 0;
+result.packet_pending = 0;
+result.packet_units_credited = 0;
+result.packet_units_duplicate = 0;
 if isfield(action,'allowed_sources')
     result.allowed_sources = double(action.allowed_sources(:))';
+end
+if isfield(action,'source_wilab_ids')
+    result.source_wilab_ids = double(action.source_wilab_ids(:))';
 end
 if isfield(action,'computation_packets_offered')
     result.computation_packets_offered = double(action.computation_packets_offered);
@@ -35,14 +49,54 @@ if ~isempty(WILAB_CLOSED_LOOP)
     if isfield(WILAB_CLOSED_LOOP,'instrument_pending_packets'), result.wilab_pending_packets = WILAB_CLOSED_LOOP.instrument_pending_packets; end
     if isfield(WILAB_CLOSED_LOOP,'radio_events'), result.radio_events = WILAB_CLOSED_LOOP.radio_events; end
     WILAB_CLOSED_LOOP.radio_events = struct([]);
+    if isfield(WILAB_CLOSED_LOOP,'pkt_paced')
+        result.packet_paced = WILAB_CLOSED_LOOP.pkt_paced;
+        result.wilab_enqueued_packets = WILAB_CLOSED_LOOP.pkt_paced;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_retransmitted')
+        result.packet_retransmitted = WILAB_CLOSED_LOOP.pkt_retransmitted;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_cancelled')
+        result.packet_cancelled = WILAB_CLOSED_LOOP.pkt_cancelled;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_dropped')
+        result.packet_dropped = WILAB_CLOSED_LOOP.pkt_dropped;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_units_credited')
+        result.packet_units_credited = WILAB_CLOSED_LOOP.pkt_units_credited;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_units_duplicate')
+        result.packet_units_duplicate = WILAB_CLOSED_LOOP.pkt_units_duplicate;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pending')
+        result.packet_pending = sum(cellfun(@numel, WILAB_CLOSED_LOOP.pending));
+        result.wilab_pending_packets = result.packet_pending;
+    end
+    % Payload-faithful per-task accounting.  Cumulative, so a result that is
+    % skipped or re-read cannot lose or double-count a payload unit.
+    result.task_radio = wilab_closed_loop_packet_accounting('state');
+    if isfield(WILAB_CLOSED_LOOP,'pkt_overflow_losses')
+        result.packet_overflow_losses = WILAB_CLOSED_LOOP.pkt_overflow_losses;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_tag_deficits')
+        result.packet_tag_deficits = WILAB_CLOSED_LOOP.pkt_tag_deficits;
+    end
+    if isfield(WILAB_CLOSED_LOOP,'pkt_capture_missing')
+        result.packet_capture_missing = WILAB_CLOSED_LOOP.pkt_capture_missing;
+    end
 end
 if ~isempty(previousPckReceived) && isfield(stationManagement,'pckReceived')
     delta = sum(stationManagement.pckReceived,1) - sum(previousPckReceived,1);
     result.delta_packets = sum(delta(:));
     result.rx_packet_delta = result.delta_packets;
     result.rx_positive = sum(stationManagement.pckReceived(:) > 0);
-    for s = result.allowed_sources
-        ix = round(s) + 1; % Python task source IDs are zero based.
+    for k = 1:numel(result.allowed_sources)
+        s = result.allowed_sources(k);
+        if isfield(result,'source_wilab_ids') && k <= numel(result.source_wilab_ids)
+            ix = round(result.source_wilab_ids(k));
+        else
+            ix = round(s) + 1; % legacy zero-based mapping
+        end
         % WiLab resets pckReceived when a new packet starts, so a simple
         % frame-to-frame sum can be zero even though the current packet was
         % successfully decoded.  Treat a positive receive entry for an

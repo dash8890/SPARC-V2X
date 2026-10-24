@@ -11,12 +11,14 @@ from pathlib import Path
 class SafetyGovernor:
     def __init__(self, max_bytes: int = 175_000, prr_floor: float = .95,
                  p95_delay_ceiling_ms: float = 50.0, risk_calibration=None,
-                 epsilon: float = .05, horizon_envelope_only: bool = False):
+                 epsilon: float = .05, horizon_envelope_only: bool = False,
+                 cbr_ceiling: float | None = 0.60):
         self.max_bytes = int(max_bytes)
         self.prr_floor = float(prr_floor)
         self.p95_delay_ceiling_ms = float(p95_delay_ceiling_ms)
         self.epsilon = float(epsilon)
         self.horizon_envelope_only = bool(horizon_envelope_only)
+        self.cbr_ceiling = None if cbr_ceiling is None else float(cbr_ceiling)
         self.risk_calibration = None
         if risk_calibration:
             p = Path(risk_calibration)
@@ -27,6 +29,29 @@ class SafetyGovernor:
     def _valid(state):
         return bool(state.get("cbr_valid", False) and state.get("delay_valid", False))
 
+    def _long_window_below_floor(self, state):
+        """True when the long-window or cumulative PRR is below the floor.
+
+        ``window_prr_long`` is only meaningful after the long-window has
+        collected enough attempts; ``cumulative_prr`` is always meaningful
+        once at least one packet has been received.  Missing measurements are
+        not treated as a violation here, but the short-window and validity
+        checks above remain fail-safe.
+        """
+        if bool(state.get("window_prr_long_valid", False)):
+            prr_long = state.get("window_prr_long")
+            if prr_long is not None and float(prr_long) < self.prr_floor:
+                return True
+        cum = state.get("cumulative_prr")
+        if cum is not None:
+            try:
+                cum = float(cum)
+            except (TypeError, ValueError):
+                cum = None
+            if cum is not None and cum > 0.0 and cum < self.prr_floor:
+                return True
+        return False
+
     def admission_allowed(self, state):
         """Return whether any positive computation action may be sampled."""
         if not self._valid(state):
@@ -36,6 +61,15 @@ class SafetyGovernor:
         if prr is not None and float(prr) < self.prr_floor:
             return False
         if p95 is not None and float(p95) > self.p95_delay_ceiling_ms:
+            return False
+        if self.cbr_ceiling is not None:
+            cbr = state.get("cbr")
+            if cbr is not None and float(cbr) > self.cbr_ceiling:
+                return False
+        # The acceptance criterion is the long-window / cumulative PRR, not
+        # only the short window.  A short window can look healthy while the
+        # cumulative service is already below the floor.
+        if self._long_window_below_floor(state):
             return False
         return True
 
@@ -78,6 +112,12 @@ class SafetyGovernor:
             return [], bool(proposed), "prr_below_floor"
         if p95 is not None and float(p95) > self.p95_delay_ceiling_ms:
             return [], bool(proposed), "p95_above_ceiling"
+        if self.cbr_ceiling is not None:
+            cbr = state.get("cbr")
+            if cbr is not None and float(cbr) > self.cbr_ceiling:
+                return [], bool(proposed), "cbr_above_ceiling"
+        if self._long_window_below_floor(state):
+            return [], bool(proposed), "prr_long_below_floor"
 
         proposed_bytes = sum(int(a.get("payload_bytes", 0)) for a in proposed)
         # A positive action is admissible only if a calibration artifact gives

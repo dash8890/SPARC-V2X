@@ -160,10 +160,26 @@ def build_epoch_rows(audit: list[dict], meta: dict) -> list[dict]:
             "wilab_enqueued_bytes": e.get("wilab_enqueued_bytes"),
             "wilab_scheduled_attempts": e.get("wilab_scheduled_attempts"),
             "wilab_pending_packets": e.get("wilab_pending_packets"),
+            "window_prr": e.get("window_prr"),
+            "window_prr_long": e.get("window_prr_long"),
+            "window_prr_long_valid": e.get("window_prr_long_valid"),
+            "window_attempts": e.get("window_attempts"),
+            "window_duration_ms": e.get("window_duration_ms"),
             "safety_prr_cumulative": e.get("safety_prr_cumulative"),
             "safety_p95_delay_cumulative_ms": e.get("safety_p95_delay_cumulative_ms"),
             "safety_rx_cumulative": e.get("safety_rx_cumulative"),
             "safety_error_cumulative": e.get("safety_error_cumulative"),
+            "packet_paced": e.get("packet_paced"),
+            "packet_retransmitted": e.get("packet_retransmitted"),
+            "packet_cancelled": e.get("packet_cancelled"),
+            "packet_dropped": e.get("packet_dropped"),
+            "packet_pending": e.get("packet_pending"),
+            "packet_overflow_losses": e.get("packet_overflow_losses"),
+            "packet_tag_deficits": e.get("packet_tag_deficits"),
+            "packet_capture_missing": e.get("packet_capture_missing"),
+            "packet_units_credited": e.get("packet_units_credited"),
+            "packet_units_duplicate": e.get("packet_units_duplicate"),
+            "payload_complete_task_ids": e.get("payload_complete_task_ids"),
             "governor_intervened": e.get("governor_intervened"),
             "governor_reason": e.get("governor_reason"),
             "governor_max_bytes": e.get("governor_max_bytes"),
@@ -211,13 +227,14 @@ def build_task_rows(layer, audit: list[dict], meta: dict) -> list[dict]:
 
     rows = []
     helpers = {h.helper_id: h for h in layer.helpers}
+    epoch_ms = float(meta.get("epoch_ms", getattr(layer, "epoch_ms", 20.0)) or 20.0)
     for t in layer.tasks:
         asg = last_assign.get(t.task_id) or first_assign.get(t.task_id)
         hid = getattr(t, "assigned_helper_id", None)
         if hid is None and asg:
             hid = asg.get("helper_id")
         helper = helpers.get(int(hid)) if hid is not None else None
-        release_ms = 10.0 * float(getattr(t, "release_epoch", 0) or 0)
+        release_ms = epoch_ms * float(getattr(t, "release_epoch", 0) or 0)
         deadline_abs_ms = release_ms + float(t.deadline_ms)
         completion_ms = getattr(t, "completion_time_ms", None)
         finish_est_ms = getattr(t, "finish_estimate_ms", None)
@@ -257,7 +274,18 @@ def build_task_rows(layer, audit: list[dict], meta: dict) -> list[dict]:
             "first_assign_epoch": None if t.task_id not in first_assign else first_assign[t.task_id]["epoch"],
             "last_assign_epoch": None if t.task_id not in last_assign else last_assign[t.task_id]["epoch"],
             "radio_delivered_epoch": delivered_epochs.get(t.task_id),
-            "packet_count": None if asg is None else asg.get("packet_count"),
+            "radio_complete_epoch": getattr(t, "radio_complete_epoch", None),
+            "packet_count": int(getattr(t, "payload_required", 0) or 0)
+            or (None if asg is None else asg.get("packet_count")),
+            "payload_required": int(getattr(t, "payload_required", 0) or 0),
+            "payload_received": int(getattr(t, "payload_received", 0) or 0),
+            "radio_ms_est": getattr(t, "radio_ms_est", None),
+            "in_flight": bool(getattr(t, "in_flight", False)),
+            "cancelled": bool(getattr(t, "cancelled", False)),
+            "cancel_reason": getattr(t, "cancel_reason", None),
+            "source_wilab_id": getattr(t, "source_wilab_id", None),
+            "helper_wilab_id": getattr(t, "helper_wilab_id", None),
+            "epoch_ms": epoch_ms,
         })
     return rows
 
@@ -347,18 +375,38 @@ def build_decision_rows(trace: list[dict], audit: list[dict], meta: dict) -> lis
     return rows
 
 
-def safety_from_audit_list(audit: list[dict], prr_floor: float = 0.95, p95_ceiling: float = 50.0) -> dict:
+def safety_from_audit_list(
+    audit: list[dict],
+    prr_floor: float = 0.95,
+    p95_ceiling: float = 50.0,
+    zero_offload: dict | None = None,
+) -> dict:
+    """Separate short-window, long-window, and cumulative safety metrics.
+
+    The controller's per-epoch window is a small-sample quantity (a handful of
+    beacon attempts); a single lost beacon can make it read 0.0.  The safety
+    *claim* therefore uses the long window (when the simulator emits it) and the
+    cumulative PRR, and is reported relative to the seed's zero-offload floor.
+    """
     n = len(audit)
     valid = [e for e in audit if e.get("cbr_valid") and e.get("delay_valid")]
     n_valid = len(valid)
+    zg = zero_offload or {}
     if n_valid == 0:
         last = audit[-1] if audit else {}
         return {
             "n_epochs": n, "n_valid": 0, "invalid_frac": 1.0,
             "P_viol": None, "P_prr_fail": None, "P_p95_fail": None,
             "mean_prr_valid": None, "mean_p95_valid": None,
-            "PRR_cum": last.get("safety_prr_cumulative"),
+            "P_viol_long": None, "P_prr_fail_long": None,
+            "mean_prr_long": None, "n_valid_long": 0,
+            "P_viol_cum": None, "PRR_cum": last.get("safety_prr_cumulative"),
             "P95_cum": last.get("safety_p95_delay_cumulative_ms"),
+            "zero_offload_P_viol": zg.get("P_viol"),
+            "zero_offload_PRR_cum": zg.get("PRR_cum"),
+            "Delta_P_viol": None,
+            "Delta_P_viol_long": None,
+            "Delta_PRR_cum": None,
             "compliant": False,
         }
     prr_fail = sum(1 for e in valid if e.get("prr") is not None and float(e["prr"]) < prr_floor)
@@ -368,19 +416,80 @@ def safety_from_audit_list(audit: list[dict], prr_floor: float = 0.95, p95_ceili
         if (e.get("prr") is not None and float(e["prr"]) < prr_floor)
         or (e.get("p95_delay_ms") is not None and float(e["p95_delay_ms"]) > p95_ceiling)
     )
+    long_valid = [
+        e for e in valid
+        if e.get("window_prr_long") is not None and e.get("window_prr_long_valid")
+    ]
+    n_long = len(long_valid)
+    if n_long:
+        long_prr_fail = sum(
+            1 for e in long_valid if float(e["window_prr_long"]) < prr_floor
+        )
+        long_p95_fail = sum(
+            1 for e in long_valid
+            if e.get("p95_delay_ms") is not None and float(e["p95_delay_ms"]) > p95_ceiling
+        )
+        long_viol = sum(
+            1 for e in long_valid
+            if float(e["window_prr_long"]) < prr_floor
+            or (e.get("p95_delay_ms") is not None and float(e["p95_delay_ms"]) > p95_ceiling)
+        )
+        mean_prr_long = sum(float(e["window_prr_long"]) for e in long_valid) / n_long
+        p_viol_long = long_viol / n_long
+        p_prr_long = long_prr_fail / n_long
+        p95_long = long_p95_fail / n_long
+    else:
+        mean_prr_long = None
+        p_viol_long = None
+        p_prr_long = None
+        p95_long = None
     last = audit[-1]
+    prr_cum = last.get("safety_prr_cumulative")
+    p_viol_cum = None
+    if prr_cum is not None:
+        p_viol_cum = 0.0 if float(prr_cum) >= prr_floor else 1.0
+    short_p_viol = viol / n_valid
+    delta_p_viol = (
+        None if zg.get("P_viol") is None else short_p_viol - float(zg["P_viol"])
+    )
+    delta_p_viol_long = (
+        None
+        if zg.get("P_viol_long") is None or p_viol_long is None
+        else p_viol_long - float(zg["P_viol_long"])
+    )
+    delta_prr_cum = (
+        None
+        if zg.get("PRR_cum") is None or prr_cum is None
+        else float(prr_cum) - float(zg["PRR_cum"])
+    )
     return {
         "n_epochs": n,
         "n_valid": n_valid,
         "invalid_frac": (n - n_valid) / max(n, 1),
-        "P_viol": viol / n_valid,
+        "P_viol": short_p_viol,
         "P_prr_fail": prr_fail / n_valid,
         "P_p95_fail": p95_fail / n_valid,
         "mean_prr_valid": sum(float(e.get("prr") or 0) for e in valid) / n_valid,
         "mean_p95_valid": sum(float(e.get("p95_delay_ms") or 0) for e in valid) / n_valid,
-        "PRR_cum": last.get("safety_prr_cumulative"),
+        "P_viol_long": p_viol_long,
+        "P_prr_fail_long": p_prr_long,
+        "P_p95_fail_long": p95_long,
+        "mean_prr_long": mean_prr_long,
+        "n_valid_long": n_long,
+        "P_viol_cum": p_viol_cum,
+        "PRR_cum": prr_cum,
         "P95_cum": last.get("safety_p95_delay_cumulative_ms"),
-        "compliant": (viol / n_valid) == 0.0,
+        "zero_offload_P_viol": zg.get("P_viol"),
+        "zero_offload_PRR_cum": zg.get("PRR_cum"),
+        "Delta_P_viol": delta_p_viol,
+        "Delta_P_viol_long": delta_p_viol_long,
+        "Delta_PRR_cum": delta_prr_cum,
+        # The claim requires both the long-window and cumulative floors.  A
+        # zero-offload-relative margin is reported separately in the summary.
+        "compliant": bool(
+            (p_viol_long is None or p_viol_long <= 0.02)
+            and (prr_cum is None or float(prr_cum) >= prr_floor)
+        ),
     }
 
 
@@ -401,7 +510,21 @@ def build_episode_summary(
     proposed_bytes = sum(int(e.get("proposed_bytes") or 0) for e in audit)
     executed_bytes = sum(int(e.get("executed_bytes") or e.get("computation_bytes_offered") or 0) for e in audit)
     delivered_bytes = sum(int(e.get("delivered_bytes") or 0) for e in audit)
+    # The audit credits delivered bytes only on epochs where the completed
+    # task is re-selected.  Payload-faithful delivery is a property of the
+    # task, not of the epoch: a task whose full payload arrived is delivered
+    # even when it is no longer in the admission action (it is in flight).
+    task_delivered_bytes = sum(
+        int(t.payload_bytes)
+        for t in layer.tasks
+        if t.done
+        and int(getattr(t, "payload_required", 0) or 0) > 0
+        and int(getattr(t, "payload_received", 0) or 0)
+        >= int(getattr(t, "payload_required", 0) or 0)
+    )
+    delivered_bytes = max(delivered_bytes, task_delivered_bytes)
     wasted_bytes = sum(int(e.get("wasted_bytes") or 0) for e in audit)
+    wasted_bytes = max(wasted_bytes, executed_bytes - delivered_bytes)
     suppressed_bytes = sum(int(e.get("suppressed_bytes") or 0) for e in audit)
     gate_blocks = sum(
         1 for e in audit
@@ -461,6 +584,16 @@ def build_episode_summary(
         "safety_invalid_frac": safety.get("invalid_frac"),
         "safety_PRR_cum": safety.get("PRR_cum"),
         "safety_P95_cum": safety.get("P95_cum"),
+        "safety_P_viol_long": safety.get("P_viol_long"),
+        "safety_P_prr_fail_long": safety.get("P_prr_fail_long"),
+        "safety_mean_prr_long": safety.get("mean_prr_long"),
+        "safety_n_valid_long": safety.get("n_valid_long"),
+        "safety_P_viol_cum": safety.get("P_viol_cum"),
+        "zero_offload_P_viol": safety.get("zero_offload_P_viol"),
+        "zero_offload_PRR_cum": safety.get("zero_offload_PRR_cum"),
+        "Delta_P_viol": safety.get("Delta_P_viol"),
+        "Delta_P_viol_long": safety.get("Delta_P_viol_long"),
+        "Delta_PRR_cum": safety.get("Delta_PRR_cum"),
         "safety_compliant": safety.get("compliant"),
     }
     return row
